@@ -23,8 +23,8 @@ export async function POST(req: Request) {
     });
 
     const message = await client.messages.create({
-      model: "claude-3-5-haiku-20241022",
-      max_tokens: 4000,
+      model: "claude-sonnet-4-6",
+      max_tokens: 5000,
       messages: [{ role: "user", content: prompt }],
     });
 
