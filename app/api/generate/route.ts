@@ -21,14 +21,16 @@ export async function POST(req: Request) {
       );
     }
 
+    const safePrompt = String(prompt || "").slice(0, 12000);
+
     const client = new Anthropic({
       apiKey: process.env.ANTHROPIC_API_KEY,
     });
 
     const message = await client.messages.create({
       model: "claude-sonnet-4-6",
-      max_tokens: 3000,
-      messages: [{ role: "user", content: prompt }],
+      max_tokens: 2200,
+      messages: [{ role: "user", content: safePrompt }],
     });
 
     const text = message.content
@@ -37,8 +39,6 @@ export async function POST(req: Request) {
 
     return Response.json({ text });
   } catch (error: any) {
-    console.error("API ERROR:", error);
-
     return Response.json(
       { error: error.message || "Something went wrong" },
       { status: 500 }
