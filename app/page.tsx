@@ -6,6 +6,7 @@ import { supabase } from "../lib/supabase";
 
 const APP_NAME = "SwiftApply";
 const DAILY_LIMIT = 3;
+const MAX_INPUT = 7000;
 
 const TABS = [
   "Dashboard",
@@ -48,6 +49,10 @@ Requirements:
 - TypeScript
 - AWS
 - Leadership experience`;
+
+function shortText(text: string) {
+  return String(text || "").slice(0, MAX_INPUT);
+}
 
 function todayKey(email: string) {
   const today = new Date().toISOString().slice(0, 10);
@@ -102,7 +107,6 @@ function downloadWord(filename: string, text: string) {
 function printPDF(title: string, text: string) {
   const win = window.open("", "_blank");
   if (!win) return;
-
   win.document.write(`
     <html>
       <head>
@@ -250,7 +254,6 @@ function ResultBox({ title, text, onClear, fileBase }: any) {
 
 function LoadingBox({ message }: any) {
   if (!message) return null;
-
   return (
     <div style={{
       marginTop: 18,
@@ -276,7 +279,7 @@ function ResumeUpload({ label, setResume }: any) {
     try {
       setStatus("Reading file...");
       const text = await extractTextFromFile(file);
-      setResume(text);
+      setResume(shortText(text));
       setStatus(`Uploaded: ${file.name}`);
     } catch (err: any) {
       setStatus("Error: " + err.message);
@@ -369,18 +372,8 @@ export default function Page() {
     localStorage.setItem(
       "swiftapply-state",
       JSON.stringify({
-        resume1,
-        resume2,
-        jd,
-        company,
-        role,
-        tailoredResume,
-        atsScore,
-        coverLetter,
-        analysis,
-        interviewPrep,
-        followUp,
-        jobs,
+        resume1, resume2, jd, company, role, tailoredResume,
+        atsScore, coverLetter, analysis, interviewPrep, followUp, jobs,
       })
     );
   }, [resume1, resume2, jd, company, role, tailoredResume, atsScore, coverLetter, analysis, interviewPrep, followUp, jobs]);
@@ -394,25 +387,15 @@ export default function Page() {
     setAuthLoading(true);
 
     if (authMode === "signup") {
-      const { error } = await supabase.auth.signUp({
-        email: authEmail,
-        password: authPassword,
-      });
-
+      const { error } = await supabase.auth.signUp({ email: authEmail, password: authPassword });
       setAuthLoading(false);
-
       if (error) alert(error.message);
-      else alert("Account created. If email confirmation is enabled, check your email. Otherwise, log in now.");
+      else alert("Account created. Please log in now.");
       return;
     }
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email: authEmail,
-      password: authPassword,
-    });
-
+    const { error } = await supabase.auth.signInWithPassword({ email: authEmail, password: authPassword });
     setAuthLoading(false);
-
     if (error) alert(error.message);
   }
 
@@ -429,52 +412,54 @@ export default function Page() {
       throw new Error(`Daily test limit reached. You can generate ${DAILY_LIMIT} items per day during beta testing.`);
     }
 
-    const text = await callAPI(prompt);
-    increaseUsage(user.email);
-    return text;
-  }
+    const safePrompt = shortText(prompt);
 
-  async function callAPI(prompt: string) {
-    const res = await fetch("/api/generate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt }),
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 55000);
 
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "API failed");
-    return String(data.text || "").replaceAll("#", "").trim();
+    try {
+      const res = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: safePrompt }),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeout);
+
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error || "API failed");
+
+      increaseUsage(user.email);
+      return String(data.text || "").replaceAll("#", "").trim();
+    } catch (err: any) {
+      clearTimeout(timeout);
+      if (err.name === "AbortError") {
+        throw new Error("Request took too long. Try a shorter resume or job description.");
+      }
+      throw err;
+    }
   }
 
   async function generateTailoredResume() {
     setLoading("Building a complete tailored resume...");
     try {
       const text = await protectedCall(`
-You are an expert resume strategist and ATS resume writer.
+Create a COMPLETE tailored resume. Keep it truthful. Do not invent details.
+No markdown symbols. No explanation after the resume.
 
-Create a COMPLETE tailored resume for the job description.
+Resume:
+${shortText(resume)}
 
-Rules:
-- Do NOT use markdown heading symbols.
-- Do NOT use # symbols.
-- Do NOT stop halfway.
-- Do NOT invent fake jobs, dates, education, companies, certificates, or personal details.
-- Keep the candidate's real background truthful.
-- Improve wording, structure, keywords, achievements, ATS match, and relevance.
-- If the original resume is long, compress it intelligently but still return a complete resume.
-- Output only the complete resume. Do not add explanation after it.
-
-Candidate resume:
-${resume}
-
-Target company the candidate is applying to:
+Target company:
 ${company}
 
-Target role the candidate is applying for:
+Target role:
 ${role}
 
 Job description:
-${jd}
+${shortText(jd)}
 `);
       setTailoredResume(text);
     } catch (err: any) {
@@ -488,45 +473,21 @@ ${jd}
     setLoading("Calculating ATS score and keyword match...");
     try {
       const text = await protectedCall(`
-You are an ATS resume evaluator.
-
-Analyse the resume against the job description and give a realistic ATS compatibility score.
-
-Rules:
-- Do NOT use # symbols.
-- Be honest and practical.
-- Do not invent experience.
-- Explain what is missing and how to improve.
-
-Return in this format:
-ATS Compatibility Score: X/100
-
-Verdict:
-Short verdict.
-
-Keyword Match:
-List matching keywords.
-
-Missing Keywords:
-List important missing keywords.
-
-Formatting & ATS Risk:
-Mention formatting risks.
-
-Top Improvements:
-Give 5 clear improvements.
+Give ATS Compatibility Score out of 100.
+Include verdict, matching keywords, missing keywords, formatting risk, and 5 improvements.
+No markdown symbols.
 
 Resume:
-${resume}
+${shortText(resume)}
 
-Target company the candidate is applying to:
+Target company:
 ${company}
 
-Target role the candidate is applying for:
+Target role:
 ${role}
 
 Job description:
-${jd}
+${shortText(jd)}
 `);
       setAtsScore(text);
     } catch (err: any) {
@@ -540,28 +501,20 @@ ${jd}
     setLoading("Writing tailored cover letter...");
     try {
       const text = await protectedCall(`
-Write a complete tailored cover letter.
-
-Rules:
-- Do NOT use markdown heading symbols.
-- Do NOT use # symbols.
-- Do NOT invent fake experience.
-- Use only the candidate's real resume details.
-- Match the target company and target role.
-- Keep it human, confident, specific, and under 350 words.
-- Output only the cover letter.
+Write a tailored cover letter under 350 words.
+Use only real resume details. No fake experience. No markdown symbols.
 
 Resume:
-${resume}
+${shortText(resume)}
 
-Target company the candidate is applying to:
+Target company:
 ${company}
 
-Target role the candidate is applying for:
+Target role:
 ${role}
 
 Job description:
-${jd}
+${shortText(jd)}
 `);
       setCoverLetter(text);
     } catch (err: any) {
@@ -575,30 +528,21 @@ ${jd}
     setLoading("Analysing strengths and weaknesses...");
     try {
       const text = await protectedCall(`
-Compare this resume against the job description.
-
-Rules:
-- Do NOT use # symbols.
-
-Give:
-1. Match score out of 10
-2. Top strengths
-3. Weaknesses/gaps
-4. Missing ATS keywords
-5. What the candidate should add/change
-6. What skills to focus on before applying
+Compare resume with job description.
+Give match score, strengths, weaknesses, missing keywords, changes to make, and skills to focus on.
+No markdown symbols.
 
 Resume:
-${resume}
+${shortText(resume)}
 
-Target company the candidate is applying to:
+Target company:
 ${company}
 
-Target role the candidate is applying for:
+Target role:
 ${role}
 
 Job description:
-${jd}
+${shortText(jd)}
 `);
       setAnalysis(text);
     } catch (err: any) {
@@ -612,30 +556,21 @@ ${jd}
     setLoading("Preparing interview guide...");
     try {
       const text = await protectedCall(`
-Prepare this candidate for interview.
-
-Rules:
-- Do NOT use # symbols.
-
-Include:
-1. Strong self-introduction
-2. Likely technical questions
-3. Likely behavioural questions
-4. STAR answer suggestions based only on resume
-5. Questions candidate should ask interviewer
-6. Target company research checklist
+Create interview prep for this candidate.
+Include intro, likely technical questions, behavioural questions, STAR answers, questions to ask, and company research checklist.
+No markdown symbols.
 
 Resume:
-${resume}
+${shortText(resume)}
 
-Target company the candidate is applying to:
+Target company:
 ${company}
 
-Target role the candidate is applying for:
+Target role:
 ${role}
 
 Job description:
-${jd}
+${shortText(jd)}
 `);
       setInterviewPrep(text);
     } catch (err: any) {
@@ -649,24 +584,14 @@ ${jd}
     setLoading("Writing follow-up message...");
     try {
       const text = await protectedCall(`
-Write a professional follow-up email for this job application.
+Write a short professional follow-up email.
+No markdown symbols.
 
-Rules:
-- Do NOT use # symbols.
-
-Target company the candidate applied to:
+Target company:
 ${company}
 
-Target role the candidate applied for:
+Target role:
 ${role}
-
-Resume context:
-${resume}
-
-Job description:
-${jd}
-
-Make it short, polite, and confident.
 `);
       setFollowUp(text);
     } catch (err: any) {
@@ -682,18 +607,15 @@ Make it short, polite, and confident.
       return;
     }
 
-    setJobs([
-      ...jobs,
-      {
-        id: Date.now(),
-        company,
-        role,
-        status,
-        appliedDate: new Date().toISOString().slice(0, 10),
-        followUpDate: "",
-        notes: "",
-      },
-    ]);
+    setJobs([...jobs, {
+      id: Date.now(),
+      company,
+      role,
+      status,
+      appliedDate: new Date().toISOString().slice(0, 10),
+      followUpDate: "",
+      notes: "",
+    }]);
 
     setActiveTab("Application Tracker");
   }
@@ -704,18 +626,15 @@ Make it short, polite, and confident.
       return;
     }
 
-    setJobs([
-      ...jobs,
-      {
-        id: Date.now(),
-        company: trackerCompany,
-        role: trackerRole,
-        appliedDate: trackerAppliedDate,
-        followUpDate: trackerFollowUpDate,
-        status: trackerStatus,
-        notes: trackerNotes,
-      },
-    ]);
+    setJobs([...jobs, {
+      id: Date.now(),
+      company: trackerCompany,
+      role: trackerRole,
+      appliedDate: trackerAppliedDate,
+      followUpDate: trackerFollowUpDate,
+      status: trackerStatus,
+      notes: trackerNotes,
+    }]);
 
     setTrackerCompany("");
     setTrackerRole("");
@@ -826,8 +745,8 @@ Make it short, polite, and confident.
                 </div>
               </div>
 
-              <TextArea label="Your Resume" value={resume} onChange={setResume} rows={12} />
-              <TextArea label="Job Description" value={jd} onChange={setJd} rows={10} />
+              <TextArea label="Your Resume" value={resume} onChange={(v: string) => setResume(shortText(v))} rows={12} />
+              <TextArea label="Job Description" value={jd} onChange={(v: string) => setJd(shortText(v))} rows={10} />
 
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                 <Button onClick={generateTailoredResume} loading={loading.includes("resume")}>Tailor Resume</Button>
