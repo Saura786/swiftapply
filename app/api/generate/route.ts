@@ -1,16 +1,30 @@
 import Anthropic from "@anthropic-ai/sdk";
 
+export async function GET() {
+  return Response.json({
+    status: "ok",
+    message: "SwiftApply API is running",
+  });
+}
+
 export async function POST(req: Request) {
   try {
     const { prompt } = await req.json();
+
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return Response.json(
+        { error: "Missing ANTHROPIC_API_KEY on server" },
+        { status: 500 }
+      );
+    }
 
     const client = new Anthropic({
       apiKey: process.env.ANTHROPIC_API_KEY,
     });
 
     const message = await client.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 5000,
+      model: "claude-3-5-haiku-20241022",
+      max_tokens: 4000,
       messages: [{ role: "user", content: prompt }],
     });
 
