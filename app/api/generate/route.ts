@@ -1,5 +1,8 @@
 import Anthropic from "@anthropic-ai/sdk";
 
+export const runtime = "nodejs";
+export const maxDuration = 60;
+
 export async function GET() {
   return Response.json({
     status: "ok",
@@ -24,7 +27,7 @@ export async function POST(req: Request) {
 
     const message = await client.messages.create({
       model: "claude-sonnet-4-6",
-      max_tokens: 5000,
+      max_tokens: 3000,
       messages: [{ role: "user", content: prompt }],
     });
 
