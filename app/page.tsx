@@ -89,13 +89,13 @@ async function extractTextFromFile(file: File) {
     }
 
     const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
-    const worker = await import("pdfjs-dist/legacy/build/pdf.worker.mjs?url");
-
-    (pdfjsLib as any).GlobalWorkerOptions.workerSrc =
-      (worker as any).default || worker;
 
     const arrayBuffer = await file.arrayBuffer();
-    const pdf = await (pdfjsLib as any).getDocument({ data: arrayBuffer }).promise;
+
+    const pdf = await (pdfjsLib as any).getDocument({
+      data: arrayBuffer,
+      disableWorker: true,
+    }).promise;
 
     let fullText = "";
 
