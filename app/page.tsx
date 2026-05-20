@@ -89,10 +89,10 @@ async function extractTextFromFile(file: File) {
     }
 
     const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
+    const worker = await import("pdfjs-dist/legacy/build/pdf.worker.mjs?url");
 
-    const version = (pdfjsLib as any).version || "4.10.38";
     (pdfjsLib as any).GlobalWorkerOptions.workerSrc =
-      `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${version}/pdf.worker.min.mjs`;
+      (worker as any).default || worker;
 
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await (pdfjsLib as any).getDocument({ data: arrayBuffer }).promise;
