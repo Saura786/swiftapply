@@ -6,7 +6,7 @@ import { supabase } from "../lib/supabase";
 
 const APP_NAME = "SwiftApply";
 const DAILY_LIMIT = 3;
-const MAX_INPUT = 7000;
+const MAX_INPUT = 20000;
 
 const TABS = [
   "Dashboard",
