@@ -3,16 +3,76 @@ import PDFParser from "pdf2json";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-function cleanPdfText(text: string) {
+function decodeText(value: string) {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value || "";
+  }
+}
+
+function extractTextFromPdfJson(pdfData: any) {
+  let output = "";
+
+  for (const page of pdfData?.Pages || []) {
+    const items = (page.Texts || [])
+      .map((item: any) => {
+        const text = (item.R || [])
+          .map((run: any) => decodeText(run.T || ""))
+          .join("");
+
+        return {
+          x: Number(item.x || 0),
+          y: Number(item.y || 0),
+          text,
+        };
+      })
+      .filter((item: any) => item.text.trim());
+
+    items.sort((a: any, b: any) => {
+      if (Math.abs(a.y - b.y) > 0.4) return a.y - b.y;
+      return a.x - b.x;
+    });
+
+    let currentY: number | null = null;
+    let line = "";
+    let lastX = 0;
+
+    for (const item of items) {
+      const sameLine = currentY !== null && Math.abs(item.y - currentY) < 0.4;
+
+      if (!sameLine) {
+        if (line.trim()) output += line.trim() + "\n";
+        line = item.text;
+        currentY = item.y;
+        lastX = item.x;
+      } else {
+        const gap = item.x - lastX;
+
+        if (gap > 1.4) {
+          line += " " + item.text;
+        } else {
+          line += item.text;
+        }
+
+        lastX = item.x;
+      }
+    }
+
+    if (line.trim()) output += line.trim() + "\n";
+    output += "\n";
+  }
+
+  return output.trim();
+}
+
+function cleanFinalText(text: string) {
   return String(text || "")
     .replace(/\r/g, "\n")
-    .replace(/[ \t]+/g, " ")
+    .replace(/[ \t]{2,}/g, " ")
     .replace(/\n{3,}/g, "\n\n")
-    .replace(/([A-Z])\s+(?=[A-Z]\s)/g, "$1")
-    .replace(/([a-zA-Z])\s+([a-zA-Z])/g, "$1$2")
-    .replace(/([a-z])([A-Z])/g, "$1 $2")
     .replace(/\s+([,.:;])/g, "$1")
-    .replace(/([•|])\s*/g, "\n$1 ")
+    .replace(/([•])\s*/g, "\n• ")
     .trim();
 }
 
@@ -48,14 +108,15 @@ export async function POST(req: Request) {
         reject(new Error(errData?.parserError || "Could not read PDF"));
       });
 
-      pdfParser.on("pdfParser_dataReady", () => {
-        resolve(pdfParser.getRawTextContent());
+      pdfParser.on("pdfParser_dataReady", (pdfData: any) => {
+        const extracted = extractTextFromPdfJson(pdfData);
+        resolve(extracted);
       });
 
       pdfParser.parseBuffer(buffer);
     });
 
-    const text = cleanPdfText(rawText);
+    const text = cleanFinalText(rawText);
 
     if (!text || text.length < 50) {
       return Response.json(
