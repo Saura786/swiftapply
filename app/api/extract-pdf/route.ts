@@ -1,10 +1,14 @@
-import pdfParse from "pdf-parse";
-
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
 export async function POST(req: Request) {
   try {
+    const pdfParseModule = await import("pdf-parse");
+    const pdfParse =
+      (pdfParseModule as any).default ||
+      (pdfParseModule as any).PDFParse ||
+      pdfParseModule;
+
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
 
