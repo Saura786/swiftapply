@@ -5,7 +5,7 @@ import mammoth from "mammoth";
 import { supabase } from "../lib/supabase";
 
 const APP_NAME = "SwiftApply";
-const DAILY_LIMIT = 3;
+const DAILY_LIMIT = 5;
 const MAX_INPUT = 50000;
 
 const TABS = [
