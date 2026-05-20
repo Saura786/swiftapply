@@ -71,38 +71,15 @@ function increaseUsage(email: string) {
 async function extractTextFromFile(file: File) {
   const name = file.name.toLowerCase();
 
-  if (name.endsWith(".txt")) {
-    return await file.text();
-  }
+  if (name.endsWith(".txt")) return await file.text();
 
   if (name.endsWith(".docx")) {
     const buffer = await file.arrayBuffer();
-    const result = await mammoth.extractRawText({
-      arrayBuffer: buffer,
-    });
-
+    const result = await mammoth.extractRawText({ arrayBuffer: buffer });
     return result.value;
   }
 
-  if (name.endsWith(".pdf")) {
-    const formData = new FormData();
-    formData.append("file", file);
-
-    const res = await fetch("/api/extract-pdf", {
-      method: "POST",
-      body: formData,
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      throw new Error(data.error || "Failed to read PDF");
-    }
-
-    return data.text || "";
-  }
-
-  throw new Error("Unsupported file type. Please upload DOCX, TXT, or PDF.");
+  throw new Error("Please upload DOCX or TXT. PDF upload will be added later.");
 }
 
 function downloadText(filename: string, text: string) {
@@ -317,8 +294,8 @@ function ResumeUpload({
   return (
     <div className="upload">
       <strong>{label}</strong>
-      <p>Upload DOCX, TXT, or PDF. PDF files must be under 4MB.</p>
-      <input type="file" accept=".docx,.txt,.pdf" onChange={upload} />
+      <p>Upload DOCX or TXT. PDF upload will be added later.</p>
+      <input type="file" accept=".docx,.txt" onChange={upload} />
       {status && <p className="status">{status}</p>}
     </div>
   );
