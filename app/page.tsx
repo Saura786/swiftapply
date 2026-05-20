@@ -90,12 +90,10 @@ async function extractTextFromFile(file: File) {
 
     const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
 
-    const arrayBuffer = await file.arrayBuffer();
+    (pdfjsLib as any).GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
-    const pdf = await (pdfjsLib as any).getDocument({
-      data: arrayBuffer,
-      disableWorker: true,
-    }).promise;
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await (pdfjsLib as any).getDocument({ data: arrayBuffer }).promise;
 
     let fullText = "";
 
