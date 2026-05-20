@@ -4,7 +4,7 @@ export const runtime = "nodejs";
 export const maxDuration = 60;
 
 const MAX_PDF_SIZE_MB = 5;
-const MAX_TEXT_LENGTH = 40000;
+const MAX_TEXT_LENGTH = 50000;
 
 function decodePdfText(value: string) {
   try {
@@ -21,6 +21,11 @@ function cleanText(text: string) {
     .replace(/\n{3,}/g, "\n\n")
     .replace(/\s+([,.:;])/g, "$1")
     .replace(/([•])\s*/g, "\n• ")
+    .replace(/\bSA G E\b/g, "SAGE")
+    .replace(/\bC onducted\b/g, "Conducted")
+    .replace(/\bwiththe\b/g, "with the")
+    .replace(/\bsoftwaretools\b/g, "software tools")
+    .replace(/\btransactiondet\b/g, "transaction details")
     .replace(/\bG oogle\b/g, "Google")
     .replace(/\bG ujar\b/g, "Gujar")
     .replace(/\bC RM\b/g, "CRM")
@@ -47,58 +52,56 @@ function extractTextFromPdfData(pdfData: any) {
   let finalText = "";
 
   for (const page of pdfData?.Pages || []) {
-    const rows: Record<string, any[]> = {};
+    const items: any[] = [];
 
     for (const item of page.Texts || []) {
-      const y = Math.round(Number(item.y || 0) * 10) / 10;
-
       const text = (item.R || [])
-        .map((run: any) => decodePdfText(run.T))
+        .map((run: any) => decodePdfText(run.T || ""))
         .join("");
 
       if (!text.trim()) continue;
 
-      if (!rows[y]) rows[y] = [];
-
-      rows[y].push({
+      items.push({
         x: Number(item.x || 0),
+        y: Number(item.y || 0),
         w: Number(item.w || 0),
         text,
       });
     }
 
-    const sortedRows = Object.entries(rows).sort(
-      ([a], [b]) => Number(a) - Number(b)
-    );
+    items.sort((a, b) => {
+      if (Math.abs(a.y - b.y) > 0.25) return a.y - b.y;
+      return a.x - b.x;
+    });
 
-    for (const [, items] of sortedRows) {
-      items.sort((a, b) => a.x - b.x);
+    let currentY: number | null = null;
+    let line = "";
+    let lastRight = 0;
 
-      let line = "";
-      let lastRight = 0;
+    for (const item of items) {
+      const sameLine =
+        currentY !== null && Math.abs(item.y - currentY) <= 0.25;
 
-      for (const item of items) {
-        const estimatedWidth =
-          item.w && item.w > 0
-            ? item.w
-            : Math.max(item.text.length * 0.16, 0.5);
+      if (!sameLine) {
+        if (line.trim()) finalText += line.trim() + "\n";
 
+        line = item.text;
+        currentY = item.y;
+        lastRight = item.x + Math.max(item.w || 0, item.text.length * 0.12);
+      } else {
         const gap = item.x - lastRight;
 
-        if (!line) {
-          line = item.text;
-        } else if (gap > 0.18) {
+        if (gap > 0.12) {
           line += " " + item.text;
         } else {
           line += item.text;
         }
 
-        lastRight = item.x + estimatedWidth;
+        lastRight = item.x + Math.max(item.w || 0, item.text.length * 0.12);
       }
-
-      if (line.trim()) finalText += line.trim() + "\n";
     }
 
+    if (line.trim()) finalText += line.trim() + "\n";
     finalText += "\n";
   }
 
