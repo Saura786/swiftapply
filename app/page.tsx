@@ -6,7 +6,7 @@ import { supabase } from "../lib/supabase";
 
 const APP_NAME = "SwiftApply";
 const DAILY_LIMIT = 3;
-const MAX_INPUT = 20000;
+const MAX_INPUT = 7000;
 
 const TABS = [
   "Dashboard",
@@ -71,15 +71,57 @@ function increaseUsage(email: string) {
 async function extractTextFromFile(file: File) {
   const name = file.name.toLowerCase();
 
-  if (name.endsWith(".txt")) return await file.text();
+  if (name.endsWith(".txt")) {
+    return await file.text();
+  }
 
   if (name.endsWith(".docx")) {
     const buffer = await file.arrayBuffer();
-    const result = await mammoth.extractRawText({ arrayBuffer: buffer });
+    const result = await mammoth.extractRawText({
+      arrayBuffer: buffer,
+    });
     return result.value;
   }
 
-  throw new Error("Please upload DOCX or TXT. PDF upload will be added later.");
+  if (name.endsWith(".pdf")) {
+    if (file.size > 2 * 1024 * 1024) {
+      throw new Error("PDF too large. Please upload a text-based PDF under 2MB, or use DOCX.");
+    }
+
+    const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
+
+    const version = (pdfjsLib as any).version || "4.10.38";
+    (pdfjsLib as any).GlobalWorkerOptions.workerSrc =
+      `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${version}/pdf.worker.min.mjs`;
+
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await (pdfjsLib as any).getDocument({ data: arrayBuffer }).promise;
+
+    let fullText = "";
+
+    const maxPages = Math.min(pdf.numPages, 5);
+
+    for (let pageNumber = 1; pageNumber <= maxPages; pageNumber++) {
+      const page = await pdf.getPage(pageNumber);
+      const content = await page.getTextContent();
+
+      const pageText = content.items
+        .map((item: any) => item.str || "")
+        .join(" ");
+
+      fullText += pageText + "\n";
+    }
+
+    const cleaned = fullText.trim();
+
+    if (!cleaned || cleaned.length < 50) {
+      throw new Error("Could not read this PDF. It may be scanned or image-based. Please upload DOCX or paste resume text.");
+    }
+
+    return cleaned;
+  }
+
+  throw new Error("Unsupported file type. Please upload DOCX, TXT, or a small text-based PDF.");
 }
 
 function downloadText(filename: string, text: string) {
@@ -294,8 +336,8 @@ function ResumeUpload({
   return (
     <div className="upload">
       <strong>{label}</strong>
-      <p>Upload DOCX or TXT. PDF upload will be added later.</p>
-      <input type="file" accept=".docx,.txt" onChange={upload} />
+      <p>Upload DOCX, TXT, or small text-based PDF under 2MB. DOCX is recommended.</p>
+      <input type="file" accept=".docx,.txt,.pdf" onChange={upload} />
       {status && <p className="status">{status}</p>}
     </div>
   );
