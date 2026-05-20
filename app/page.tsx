@@ -8,29 +8,8 @@ const APP_NAME = "SwiftApply";
 const DAILY_LIMIT = 3;
 const MAX_INPUT = 7000;
 
-const TABS = [
-  "Dashboard",
-  "Resume Builder",
-  "ATS Score",
-  "Cover Letter",
-  "Strength Analysis",
-  "Interview Prep",
-  "Application Tracker",
-  "Follow-Up",
-];
-
-const STATUSES = [
-  "Saved",
-  "Applied",
-  "Follow-Up Needed",
-  "Interview",
-  "Interviewed",
-  "Documentation Needed",
-  "Visa",
-  "Offer",
-  "Rejected",
-  "Ghosted",
-];
+const TABS = ["Dashboard", "Resume Builder", "ATS Score", "Cover Letter", "Strength Analysis", "Interview Prep", "Application Tracker", "Follow-Up"];
+const STATUSES = ["Saved", "Applied", "Follow-Up Needed", "Interview", "Interviewed", "Documentation Needed", "Visa", "Offer", "Rejected", "Ghosted"];
 
 const SAMPLE_RESUME = `John Doe
 Software Engineer | john@email.com | Dublin, Ireland
@@ -55,8 +34,7 @@ function shortText(text: string) {
 }
 
 function todayKey(email: string) {
-  const today = new Date().toISOString().slice(0, 10);
-  return `swiftapply-usage-${email}-${today}`;
+  return `swiftapply-usage-${email}-${new Date().toISOString().slice(0, 10)}`;
 }
 
 function getUsage(email: string) {
@@ -65,21 +43,17 @@ function getUsage(email: string) {
 }
 
 function increaseUsage(email: string) {
-  const current = getUsage(email);
-  localStorage.setItem(todayKey(email), String(current + 1));
+  localStorage.setItem(todayKey(email), String(getUsage(email) + 1));
 }
 
 async function extractTextFromFile(file: File) {
   const name = file.name.toLowerCase();
-
   if (name.endsWith(".txt")) return await file.text();
-
   if (name.endsWith(".docx")) {
     const buffer = await file.arrayBuffer();
     const result = await mammoth.extractRawText({ arrayBuffer: buffer });
     return result.value;
   }
-
   throw new Error("Please upload DOCX or TXT. PDF upload will be added later.");
 }
 
@@ -127,19 +101,8 @@ function printPDF(title: string, text: string) {
 
 function exportTrackerCSV(jobs: any[]) {
   const headers = ["Company", "Role", "Date Applied", "Follow Up Date", "Status", "Notes"];
-  const rows = jobs.map((job) => [
-    job.company,
-    job.role,
-    job.appliedDate,
-    job.followUpDate,
-    job.status,
-    job.notes,
-  ]);
-
-  const csv = [headers, ...rows]
-    .map((row) => row.map((cell) => `"${String(cell || "").replaceAll('"', '""')}"`).join(","))
-    .join("\n");
-
+  const rows = jobs.map((job) => [job.company, job.role, job.appliedDate, job.followUpDate, job.status, job.notes]);
+  const csv = [headers, ...rows].map((row) => row.map((cell) => `"${String(cell || "").replaceAll('"', '""')}"`).join(",")).join("\n");
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -147,153 +110,6 @@ function exportTrackerCSV(jobs: any[]) {
   a.download = "swiftapply-application-tracker.csv";
   a.click();
   URL.revokeObjectURL(url);
-}
-
-function Button({ children, onClick, loading = false, secondary = false, danger = false }: any) {
-  return (
-    <button
-      onClick={onClick}
-      disabled={loading}
-      style={{
-        padding: "12px 18px",
-        borderRadius: 999,
-        border: secondary || danger ? "1px solid #ddd" : "none",
-        background: danger ? "#fff1f2" : secondary ? "#fff" : "#4f46e5",
-        color: danger ? "#be123c" : secondary ? "#222" : "#fff",
-        fontWeight: 800,
-        cursor: loading ? "not-allowed" : "pointer",
-      }}
-    >
-      {loading ? "Generating..." : children}
-    </button>
-  );
-}
-
-function Card({ children }: any) {
-  return (
-    <div style={{
-      background: "#fff",
-      border: "1px solid #e5e7eb",
-      borderRadius: 24,
-      padding: 24,
-      boxShadow: "0 18px 50px rgba(0,0,0,0.06)",
-    }}>
-      {children}
-    </div>
-  );
-}
-
-function TextArea({ label, value, onChange, rows = 9 }: any) {
-  return (
-    <div style={{ marginBottom: 18 }}>
-      <label style={{ display: "block", fontWeight: 800, marginBottom: 8 }}>{label}</label>
-      <textarea
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        rows={rows}
-        style={{
-          width: "100%",
-          padding: 14,
-          borderRadius: 16,
-          border: "1px solid #ddd",
-          fontSize: 14,
-          lineHeight: 1.6,
-        }}
-      />
-    </div>
-  );
-}
-
-function Input({ label, value, onChange, type = "text", placeholder = "" }: any) {
-  return (
-    <div style={{ marginBottom: 16 }}>
-      <label style={{ display: "block", fontWeight: 800, marginBottom: 8 }}>{label}</label>
-      <input
-        type={type}
-        value={value}
-        placeholder={placeholder}
-        onChange={(e) => onChange(e.target.value)}
-        style={{
-          width: "100%",
-          padding: 13,
-          borderRadius: 14,
-          border: "1px solid #ddd",
-          fontSize: 14,
-        }}
-      />
-    </div>
-  );
-}
-
-function ResultBox({ title, text, onClear, fileBase }: any) {
-  if (!text) return null;
-
-  return (
-    <div style={{
-      marginTop: 24,
-      padding: 22,
-      borderRadius: 20,
-      background: "#f8f7ff",
-      border: "1px solid #dedbff",
-      whiteSpace: "pre-wrap",
-      lineHeight: 1.7,
-    }}>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-        <h3 style={{ marginTop: 0 }}>{title}</h3>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <Button secondary onClick={() => downloadWord(`${fileBase}.doc`, text)}>Word</Button>
-          <Button secondary onClick={() => printPDF(title, text)}>PDF</Button>
-          <Button secondary onClick={() => downloadText(`${fileBase}.txt`, text)}>TXT</Button>
-          <Button danger onClick={onClear}>Clear</Button>
-        </div>
-      </div>
-      {text}
-    </div>
-  );
-}
-
-function LoadingBox({ message }: any) {
-  if (!message) return null;
-  return (
-    <div style={{
-      marginTop: 18,
-      marginBottom: 18,
-      padding: 16,
-      borderRadius: 18,
-      background: "#eef2ff",
-      color: "#3730a3",
-      fontWeight: 700,
-    }}>
-      ⏳ {message}
-    </div>
-  );
-}
-
-function ResumeUpload({ label, setResume }: any) {
-  const [status, setStatus] = useState("");
-
-  async function upload(e: any) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    try {
-      setStatus("Reading file...");
-      const text = await extractTextFromFile(file);
-      setResume(shortText(text));
-      setStatus(`Uploaded: ${file.name}`);
-    } catch (err: any) {
-      setStatus("Error: " + err.message);
-    }
-  }
-
-  return (
-    <div style={{ padding: 18, borderRadius: 18, border: "1px dashed #9ca3af", background: "#f9fafb" }}>
-      <strong>{label}</strong>
-      <p style={{ color: "#666", margin: "6px 0 10px" }}>Upload DOCX or TXT. PDF upload will be added later.</p>
-      <input type="file" accept=".docx,.txt" onChange={upload} />
-      {status && <p style={{ color: "#4f46e5" }}>{status}</p>}
-    </div>
-  );
 }
 
 function statusColor(status: string) {
@@ -369,13 +185,9 @@ export default function Page() {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem(
-      "swiftapply-state",
-      JSON.stringify({
-        resume1, resume2, jd, company, role, tailoredResume,
-        atsScore, coverLetter, analysis, interviewPrep, followUp, jobs,
-      })
-    );
+    localStorage.setItem("swiftapply-state", JSON.stringify({
+      resume1, resume2, jd, company, role, tailoredResume, atsScore, coverLetter, analysis, interviewPrep, followUp, jobs,
+    }));
   }, [resume1, resume2, jd, company, role, tailoredResume, atsScore, coverLetter, analysis, interviewPrep, followUp, jobs]);
 
   async function loginOrSignup() {
@@ -406,13 +218,9 @@ export default function Page() {
 
   async function protectedCall(prompt: string) {
     if (!user?.email) throw new Error("Please login first.");
-
-    const current = getUsage(user.email);
-    if (current >= DAILY_LIMIT) {
+    if (getUsage(user.email) >= DAILY_LIMIT) {
       throw new Error(`Daily test limit reached. You can generate ${DAILY_LIMIT} items per day during beta testing.`);
     }
-
-    const safePrompt = shortText(prompt);
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 55000);
@@ -421,23 +229,19 @@ export default function Page() {
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: safePrompt }),
+        body: JSON.stringify({ prompt: shortText(prompt) }),
         signal: controller.signal,
       });
 
       clearTimeout(timeout);
-
       const data = await res.json();
-
       if (!res.ok) throw new Error(data.error || "API failed");
 
       increaseUsage(user.email);
       return String(data.text || "").replaceAll("#", "").trim();
     } catch (err: any) {
       clearTimeout(timeout);
-      if (err.name === "AbortError") {
-        throw new Error("Request took too long. Try a shorter resume or job description.");
-      }
+      if (err.name === "AbortError") throw new Error("Request took too long. Try shorter text.");
       throw err;
     }
   }
@@ -445,9 +249,7 @@ export default function Page() {
   async function generateTailoredResume() {
     setLoading("Building a complete tailored resume...");
     try {
-      const text = await protectedCall(`
-Create a COMPLETE tailored resume. Keep it truthful. Do not invent details.
-No markdown symbols. No explanation after the resume.
+      const text = await protectedCall(`Create a COMPLETE tailored resume. Keep it truthful. Do not invent details. No markdown symbols. No explanation after the resume.
 
 Resume:
 ${shortText(resume)}
@@ -459,8 +261,7 @@ Target role:
 ${role}
 
 Job description:
-${shortText(jd)}
-`);
+${shortText(jd)}`);
       setTailoredResume(text);
     } catch (err: any) {
       setTailoredResume("Error: " + err.message);
@@ -472,10 +273,7 @@ ${shortText(jd)}
   async function generateATSScore() {
     setLoading("Calculating ATS score and keyword match...");
     try {
-      const text = await protectedCall(`
-Give ATS Compatibility Score out of 100.
-Include verdict, matching keywords, missing keywords, formatting risk, and 5 improvements.
-No markdown symbols.
+      const text = await protectedCall(`Give ATS Compatibility Score out of 100. Include verdict, matching keywords, missing keywords, formatting risk, and 5 improvements. No markdown symbols.
 
 Resume:
 ${shortText(resume)}
@@ -487,8 +285,7 @@ Target role:
 ${role}
 
 Job description:
-${shortText(jd)}
-`);
+${shortText(jd)}`);
       setAtsScore(text);
     } catch (err: any) {
       setAtsScore("Error: " + err.message);
@@ -500,9 +297,7 @@ ${shortText(jd)}
   async function generateCoverLetter() {
     setLoading("Writing tailored cover letter...");
     try {
-      const text = await protectedCall(`
-Write a tailored cover letter under 350 words.
-Use only real resume details. No fake experience. No markdown symbols.
+      const text = await protectedCall(`Write a tailored cover letter under 350 words. Use only real resume details. No fake experience. No markdown symbols.
 
 Resume:
 ${shortText(resume)}
@@ -514,8 +309,7 @@ Target role:
 ${role}
 
 Job description:
-${shortText(jd)}
-`);
+${shortText(jd)}`);
       setCoverLetter(text);
     } catch (err: any) {
       setCoverLetter("Error: " + err.message);
@@ -527,10 +321,7 @@ ${shortText(jd)}
   async function generateAnalysis() {
     setLoading("Analysing strengths and weaknesses...");
     try {
-      const text = await protectedCall(`
-Compare resume with job description.
-Give match score, strengths, weaknesses, missing keywords, changes to make, and skills to focus on.
-No markdown symbols.
+      const text = await protectedCall(`Compare resume with job description. Give match score, strengths, weaknesses, missing keywords, changes to make, and skills to focus on. No markdown symbols.
 
 Resume:
 ${shortText(resume)}
@@ -542,8 +333,7 @@ Target role:
 ${role}
 
 Job description:
-${shortText(jd)}
-`);
+${shortText(jd)}`);
       setAnalysis(text);
     } catch (err: any) {
       setAnalysis("Error: " + err.message);
@@ -555,10 +345,7 @@ ${shortText(jd)}
   async function generateInterviewPrep() {
     setLoading("Preparing interview guide...");
     try {
-      const text = await protectedCall(`
-Create interview prep for this candidate.
-Include intro, likely technical questions, behavioural questions, STAR answers, questions to ask, and company research checklist.
-No markdown symbols.
+      const text = await protectedCall(`Create interview prep for this candidate. Include intro, technical questions, behavioural questions, STAR answers, questions to ask, and company research checklist. No markdown symbols.
 
 Resume:
 ${shortText(resume)}
@@ -570,8 +357,7 @@ Target role:
 ${role}
 
 Job description:
-${shortText(jd)}
-`);
+${shortText(jd)}`);
       setInterviewPrep(text);
     } catch (err: any) {
       setInterviewPrep("Error: " + err.message);
@@ -583,16 +369,13 @@ ${shortText(jd)}
   async function generateFollowUp() {
     setLoading("Writing follow-up message...");
     try {
-      const text = await protectedCall(`
-Write a short professional follow-up email.
-No markdown symbols.
+      const text = await protectedCall(`Write a short professional follow-up email. No markdown symbols.
 
 Target company:
 ${company}
 
 Target role:
-${role}
-`);
+${role}`);
       setFollowUp(text);
     } catch (err: any) {
       setFollowUp("Error: " + err.message);
@@ -606,17 +389,7 @@ ${role}
       alert("Add target company and target role first.");
       return;
     }
-
-    setJobs([...jobs, {
-      id: Date.now(),
-      company,
-      role,
-      status,
-      appliedDate: new Date().toISOString().slice(0, 10),
-      followUpDate: "",
-      notes: "",
-    }]);
-
+    setJobs([...jobs, { id: Date.now(), company, role, status, appliedDate: new Date().toISOString().slice(0, 10), followUpDate: "", notes: "" }]);
     setActiveTab("Application Tracker");
   }
 
@@ -625,17 +398,7 @@ ${role}
       alert("Add target company and target role.");
       return;
     }
-
-    setJobs([...jobs, {
-      id: Date.now(),
-      company: trackerCompany,
-      role: trackerRole,
-      appliedDate: trackerAppliedDate,
-      followUpDate: trackerFollowUpDate,
-      status: trackerStatus,
-      notes: trackerNotes,
-    }]);
-
+    setJobs([...jobs, { id: Date.now(), company: trackerCompany, role: trackerRole, appliedDate: trackerAppliedDate, followUpDate: trackerFollowUpDate, status: trackerStatus, notes: trackerNotes }]);
     setTrackerCompany("");
     setTrackerRole("");
     setTrackerAppliedDate(new Date().toISOString().slice(0, 10));
@@ -652,78 +415,139 @@ ${role}
     setJobs(jobs.filter((j) => j.id !== id));
   }
 
+  function Input({ label, value, onChange, type = "text", placeholder = "" }: any) {
+    return (
+      <div className="field">
+        <label>{label}</label>
+        <input type={type} value={value} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} />
+      </div>
+    );
+  }
+
+  function TextArea({ label, value, onChange, rows = 9 }: any) {
+    return (
+      <div className="field">
+        <label>{label}</label>
+        <textarea value={value} onChange={(e) => onChange(e.target.value)} rows={rows} />
+      </div>
+    );
+  }
+
+  function Button({ children, onClick, loading = false, secondary = false, danger = false }: any) {
+    return (
+      <button onClick={onClick} disabled={loading} className={`btn ${secondary ? "secondary" : ""} ${danger ? "danger" : ""}`}>
+        {loading ? "Generating..." : children}
+      </button>
+    );
+  }
+
+  function Card({ children }: any) {
+    return <div className="card">{children}</div>;
+  }
+
+  function ResultBox({ title, text, onClear, fileBase }: any) {
+    if (!text) return null;
+    return (
+      <div className="result">
+        <div className="resultTop">
+          <h3>{title}</h3>
+          <div className="actions">
+            <Button secondary onClick={() => downloadWord(`${fileBase}.doc`, text)}>Word</Button>
+            <Button secondary onClick={() => printPDF(title, text)}>PDF</Button>
+            <Button secondary onClick={() => downloadText(`${fileBase}.txt`, text)}>TXT</Button>
+            <Button danger onClick={onClear}>Clear</Button>
+          </div>
+        </div>
+        {text}
+      </div>
+    );
+  }
+
+  function ResumeUpload({ label, setResume }: any) {
+    const [status, setStatus] = useState("");
+    async function upload(e: any) {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      try {
+        setStatus("Reading file...");
+        const text = await extractTextFromFile(file);
+        setResume(shortText(text));
+        setStatus(`Uploaded: ${file.name}`);
+      } catch (err: any) {
+        setStatus("Error: " + err.message);
+      }
+    }
+    return (
+      <div className="upload">
+        <strong>{label}</strong>
+        <p>Upload DOCX or TXT. PDF upload will be added later.</p>
+        <input type="file" accept=".docx,.txt" onChange={upload} />
+        {status && <p className="status">{status}</p>}
+      </div>
+    );
+  }
+
   if (!user) {
     return (
-      <main style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg,#eef2ff,#ffffff)", fontFamily: "Arial", padding: 20 }}>
-        <Card>
-          <h1 style={{ marginTop: 0, fontSize: 38 }}>SwiftApply</h1>
-          <p style={{ color: "#666", marginBottom: 30 }}>AI-powered job application workspace</p>
+      <>
+        <style>{styles}</style>
+        <main className="loginPage">
+          <div className="loginCard">
+            <h1>SwiftApply</h1>
+            <p>AI-powered job application workspace</p>
 
-          <Input label="Email" type="email" value={authEmail} onChange={setAuthEmail} placeholder="you@example.com" />
-          <Input label="Password" type="password" value={authPassword} onChange={setAuthPassword} placeholder="Minimum 6 characters" />
+            <Input label="Email" type="email" value={authEmail} onChange={setAuthEmail} placeholder="you@example.com" />
+            <Input label="Password" type="password" value={authPassword} onChange={setAuthPassword} placeholder="Minimum 6 characters" />
 
-          <button onClick={loginOrSignup} disabled={authLoading} style={{ width: "100%", padding: 16, borderRadius: 14, border: "none", background: "#4f46e5", color: "white", fontWeight: 700, cursor: "pointer", fontSize: 15 }}>
-            {authLoading ? "Please wait..." : authMode === "login" ? "Login" : "Create Account"}
-          </button>
+            <button className="mainLoginBtn" onClick={loginOrSignup} disabled={authLoading}>
+              {authLoading ? "Please wait..." : authMode === "login" ? "Login" : "Create Account"}
+            </button>
 
-          <button onClick={() => setAuthMode(authMode === "login" ? "signup" : "login")} style={{ width: "100%", padding: 16, borderRadius: 14, border: "1px solid #ddd", background: "white", color: "#111827", fontWeight: 700, cursor: "pointer", fontSize: 15, marginTop: 12 }}>
-            {authMode === "login" ? "Need an account? Sign up" : "Already have an account? Login"}
-          </button>
-        </Card>
-      </main>
+            <button className="switchBtn" onClick={() => setAuthMode(authMode === "login" ? "signup" : "login")}>
+              {authMode === "login" ? "Need an account? Sign up" : "Already have an account? Login"}
+            </button>
+          </div>
+        </main>
+      </>
     );
   }
 
   return (
-    <main style={{ minHeight: "100vh", background: "#f8fafc", fontFamily: "Arial, sans-serif" }}>
-      <div style={{ display: "grid", gridTemplateColumns: "260px 1fr", minHeight: "100vh" }}>
-        <aside style={{ background: "#111827", color: "white", padding: 24 }}>
-          <h1 style={{ fontSize: 28, marginTop: 0 }}>{APP_NAME}</h1>
-          <p style={{ color: "#cbd5e1", fontSize: 14 }}>AI job application workspace</p>
+    <>
+      <style>{styles}</style>
+      <main className="app">
+        <aside className="sidebar">
+          <h1>{APP_NAME}</h1>
+          <p>AI job application workspace</p>
 
-          <div style={{ background: "#1f2937", padding: 12, borderRadius: 14, marginTop: 18 }}>
+          <div className="usage">
             <strong>{remaining}/{DAILY_LIMIT}</strong>
-            <p style={{ margin: "6px 0 0", color: "#cbd5e1", fontSize: 13 }}>AI generations left today</p>
+            <span>AI generations left today</span>
           </div>
 
-          <div style={{ marginTop: 28, display: "flex", flexDirection: "column", gap: 8 }}>
+          <nav>
             {TABS.map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                style={{
-                  textAlign: "left",
-                  padding: "12px 14px",
-                  borderRadius: 14,
-                  border: "none",
-                  background: activeTab === tab ? "#4f46e5" : "transparent",
-                  color: "white",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                }}
-              >
+              <button key={tab} onClick={() => setActiveTab(tab)} className={activeTab === tab ? "active" : ""}>
                 {tab}
               </button>
             ))}
-          </div>
+          </nav>
 
-          <div style={{ marginTop: 30, fontSize: 13, color: "#cbd5e1" }}>{user.email}</div>
-          <button onClick={logout} style={{ marginTop: 12, padding: "10px 14px", borderRadius: 999, border: "1px solid #374151", background: "transparent", color: "white", cursor: "pointer" }}>
-            Logout
-          </button>
+          <div className="userEmail">{user.email}</div>
+          <button className="logout" onClick={logout}>Logout</button>
         </aside>
 
-        <section style={{ padding: 30 }}>
-          <div style={{ marginBottom: 24 }}>
-            <h2 style={{ fontSize: 34, margin: 0 }}>{activeTab}</h2>
-            <p style={{ color: "#64748b" }}>Create stronger job applications with less time and more confidence.</p>
+        <section className="content">
+          <div className="pageTitle">
+            <h2>{activeTab}</h2>
+            <p>Create stronger job applications with less time and more confidence.</p>
           </div>
 
-          <LoadingBox message={loading} />
+          {loading && <div className="loading">⏳ {loading}</div>}
 
           {activeTab === "Dashboard" && (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 18 }}>
-              <Card><h3>Saved Applications</h3><p style={{ fontSize: 32, fontWeight: 900 }}>{jobs.length}</p></Card>
+            <div className="grid">
+              <Card><h3>Saved Applications</h3><b>{jobs.length}</b></Card>
               <Card><h3>Resume Output</h3><p>{tailoredResume ? "Generated" : "Not generated yet"}</p></Card>
               <Card><h3>ATS Score</h3><p>{atsScore ? "Available" : "Not checked yet"}</p></Card>
               <Card><h3>Daily Limit</h3><p>{remaining}/{DAILY_LIMIT} generations left</p></Card>
@@ -732,12 +556,12 @@ ${role}
 
           {activeTab === "Resume Builder" && (
             <Card>
-              <div style={{ display: "flex", gap: 12, marginBottom: 18 }}>
+              <div className="actions">
                 <Button secondary={activeResume !== "resume1"} onClick={() => setActiveResume("resume1")}>Resume 1</Button>
                 <Button secondary={activeResume !== "resume2"} onClick={() => setActiveResume("resume2")}>Resume 2</Button>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
+              <div className="twoCol">
                 <ResumeUpload label="Upload Selected Resume" setResume={setResume} />
                 <div>
                   <Input label="Target Company" value={company} onChange={setCompany} placeholder="Example: Google" />
@@ -748,7 +572,7 @@ ${role}
               <TextArea label="Your Resume" value={resume} onChange={(v: string) => setResume(shortText(v))} rows={12} />
               <TextArea label="Job Description" value={jd} onChange={(v: string) => setJd(shortText(v))} rows={10} />
 
-              <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+              <div className="actions">
                 <Button onClick={generateTailoredResume} loading={loading.includes("resume")}>Tailor Resume</Button>
                 <Button secondary onClick={() => addApplicationFromBuilder("Applied")}>Mark Application as Applied</Button>
               </div>
@@ -792,17 +616,17 @@ ${role}
           {activeTab === "Application Tracker" && (
             <Card>
               <h2>Application Tracker</h2>
-              <p style={{ color: "#666" }}>Track target company, target role, applied date, follow-up date, status, and notes.</p>
+              <p>Track target company, target role, applied date, follow-up date, status, and notes.</p>
 
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14, marginBottom: 12 }}>
+              <div className="twoCol">
                 <Input label="Target Company" value={trackerCompany} onChange={setTrackerCompany} />
                 <Input label="Target Role" value={trackerRole} onChange={setTrackerRole} />
                 <Input label="Date Applied" type="date" value={trackerAppliedDate} onChange={setTrackerAppliedDate} />
                 <Input label="Follow-Up Date" type="date" value={trackerFollowUpDate} onChange={setTrackerFollowUpDate} />
 
-                <div>
-                  <label style={{ display: "block", fontWeight: 800, marginBottom: 8 }}>Status</label>
-                  <select value={trackerStatus} onChange={(e) => setTrackerStatus(e.target.value)} style={{ width: "100%", padding: 13, borderRadius: 14, border: "1px solid #ddd" }}>
+                <div className="field">
+                  <label>Status</label>
+                  <select value={trackerStatus} onChange={(e) => setTrackerStatus(e.target.value)}>
                     {STATUSES.map((s) => <option key={s}>{s}</option>)}
                   </select>
                 </div>
@@ -810,33 +634,25 @@ ${role}
                 <Input label="Notes" value={trackerNotes} onChange={setTrackerNotes} />
               </div>
 
-              <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+              <div className="actions">
                 <Button onClick={addApplicationManual}>Add Application</Button>
                 <Button secondary onClick={() => exportTrackerCSV(jobs)}>Export Tracker CSV</Button>
               </div>
 
-              <div style={{ marginTop: 24 }}>
+              <div className="jobList">
                 {jobs.length === 0 && <p>No applications tracked yet.</p>}
-
                 {jobs.map((job) => (
-                  <div key={job.id} style={{ padding: 18, borderRadius: 18, border: "1px solid #ddd", marginBottom: 14, background: statusColor(job.status) }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-                      <div>
-                        <strong>{job.company}</strong> — {job.role}
-                        <p style={{ color: "#475569", margin: "6px 0" }}>
-                          Applied: {job.appliedDate || "Not set"} | Follow-up: {job.followUpDate || "Not set"}
-                        </p>
-                      </div>
-                      <Button danger onClick={() => deleteJob(job.id)}>Delete</Button>
+                  <div key={job.id} className="job" style={{ background: statusColor(job.status) }}>
+                    <div>
+                      <strong>{job.company}</strong> — {job.role}
+                      <p>Applied: {job.appliedDate || "Not set"} | Follow-up: {job.followUpDate || "Not set"}</p>
                     </div>
-
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginTop: 12 }}>
-                      <select value={job.status} onChange={(e) => updateJob(job.id, "status", e.target.value)}>
-                        {STATUSES.map((s) => <option key={s}>{s}</option>)}
-                      </select>
-                      <input type="date" value={job.followUpDate} onChange={(e) => updateJob(job.id, "followUpDate", e.target.value)} />
-                      <input placeholder="Notes" value={job.notes} onChange={(e) => updateJob(job.id, "notes", e.target.value)} />
-                    </div>
+                    <Button danger onClick={() => deleteJob(job.id)}>Delete</Button>
+                    <select value={job.status} onChange={(e) => updateJob(job.id, "status", e.target.value)}>
+                      {STATUSES.map((s) => <option key={s}>{s}</option>)}
+                    </select>
+                    <input type="date" value={job.followUpDate} onChange={(e) => updateJob(job.id, "followUpDate", e.target.value)} />
+                    <input placeholder="Notes" value={job.notes} onChange={(e) => updateJob(job.id, "notes", e.target.value)} />
                   </div>
                 ))}
               </div>
@@ -851,7 +667,247 @@ ${role}
             </Card>
           )}
         </section>
-      </div>
-    </main>
+      </main>
+    </>
   );
 }
+
+const styles = `
+* { box-sizing: border-box; }
+body { margin: 0; }
+input, textarea, select {
+  background: white !important;
+  color: #111827 !important;
+}
+.loginPage {
+  min-height: 100vh;
+  background: linear-gradient(135deg,#111827,#4f46e5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+}
+.loginCard {
+  width: 100%;
+  max-width: 430px;
+  background: white;
+  border-radius: 28px;
+  padding: 32px;
+  box-shadow: 0 28px 80px rgba(0,0,0,0.25);
+}
+.loginCard h1 { margin: 0; font-size: 42px; color: #111827; }
+.loginCard p { color: #64748b; }
+.mainLoginBtn, .switchBtn {
+  width: 100%;
+  padding: 15px;
+  border-radius: 15px;
+  font-weight: 800;
+  font-size: 15px;
+  cursor: pointer;
+}
+.mainLoginBtn {
+  border: none;
+  background: #4f46e5;
+  color: white;
+}
+.switchBtn {
+  border: 1px solid #ddd;
+  background: white;
+  color: #111827;
+  margin-top: 12px;
+}
+.app {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  background: #f8fafc;
+  font-family: Arial, sans-serif;
+}
+.sidebar {
+  background: #111827;
+  color: white;
+  padding: 24px;
+}
+.sidebar h1 { margin: 0; font-size: 28px; }
+.sidebar p, .userEmail { color: #cbd5e1; font-size: 13px; }
+.usage {
+  background: #1f2937;
+  padding: 12px;
+  border-radius: 14px;
+  margin-top: 18px;
+}
+.usage span { display: block; color: #cbd5e1; font-size: 13px; margin-top: 4px; }
+nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 24px;
+}
+nav button {
+  text-align: left;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: none;
+  background: transparent;
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+}
+nav button.active { background: #4f46e5; }
+.logout {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid #374151;
+  background: transparent;
+  color: white;
+  cursor: pointer;
+}
+.content { padding: 30px; }
+.pageTitle h2 { margin: 0; font-size: 34px; }
+.pageTitle p { color: #64748b; }
+.card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow: 0 18px 50px rgba(0,0,0,0.06);
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(220px,1fr));
+  gap: 18px;
+}
+.grid b { font-size: 32px; }
+.twoCol {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(240px,1fr));
+  gap: 16px;
+}
+.field { margin-bottom: 16px; }
+.field label {
+  display: block;
+  font-weight: 800;
+  margin-bottom: 8px;
+  color: #111827;
+}
+.field input, .field textarea, .field select, select, input {
+  width: 100%;
+  padding: 13px;
+  border-radius: 14px;
+  border: 1px solid #d1d5db;
+  font-size: 14px;
+}
+.field textarea { line-height: 1.6; }
+.btn {
+  padding: 12px 18px;
+  border-radius: 999px;
+  border: none;
+  background: #4f46e5;
+  color: white;
+  font-weight: 800;
+  cursor: pointer;
+}
+.btn.secondary {
+  background: white;
+  color: #111827;
+  border: 1px solid #ddd;
+}
+.btn.danger {
+  background: #fff1f2;
+  color: #be123c;
+  border: 1px solid #fecdd3;
+}
+.actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 12px 0;
+}
+.result {
+  margin-top: 24px;
+  padding: 22px;
+  border-radius: 20px;
+  background: #f8f7ff;
+  border: 1px solid #dedbff;
+  white-space: pre-wrap;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.resultTop {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.upload {
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px dashed #9ca3af;
+  background: #f9fafb;
+}
+.upload p { color: #666; }
+.status { color: #4f46e5 !important; }
+.loading {
+  padding: 16px;
+  border-radius: 18px;
+  background: #eef2ff;
+  color: #3730a3;
+  font-weight: 700;
+  margin-bottom: 18px;
+}
+.job {
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px solid #ddd;
+  margin-top: 14px;
+  display: grid;
+  gap: 12px;
+}
+@media (max-width: 800px) {
+  .app {
+    display: block;
+  }
+  .sidebar {
+    position: static;
+    padding: 18px;
+  }
+  nav {
+    flex-direction: row;
+    overflow-x: auto;
+    padding-bottom: 8px;
+  }
+  nav button {
+    white-space: nowrap;
+    min-width: max-content;
+    font-size: 13px;
+  }
+  .content {
+    padding: 16px;
+  }
+  .pageTitle h2 {
+    font-size: 28px;
+  }
+  .card {
+    padding: 18px;
+    border-radius: 20px;
+  }
+  .loginCard {
+    padding: 24px;
+    border-radius: 22px;
+  }
+  .loginCard h1 {
+    font-size: 34px;
+  }
+  .btn, .mainLoginBtn, .switchBtn {
+    width: 100%;
+  }
+  .actions {
+    flex-direction: column;
+  }
+  .resultTop {
+    flex-direction: column;
+  }
+}
+`;
