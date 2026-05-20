@@ -88,38 +88,24 @@ async function extractTextFromFile(file: File) {
       throw new Error("PDF too large. Please upload a text-based PDF under 2MB, or use DOCX.");
     }
 
-    const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
+    const formData = new FormData();
+    formData.append("file", file);
 
-    (pdfjsLib as any).GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+    const res = await fetch("/api/extract-pdf", {
+      method: "POST",
+      body: formData,
+    });
 
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await (pdfjsLib as any).getDocument({ data: arrayBuffer }).promise;
+    const data = await res.json();
 
-    let fullText = "";
-
-    const maxPages = Math.min(pdf.numPages, 5);
-
-    for (let pageNumber = 1; pageNumber <= maxPages; pageNumber++) {
-      const page = await pdf.getPage(pageNumber);
-      const content = await page.getTextContent();
-
-      const pageText = content.items
-        .map((item: any) => item.str || "")
-        .join(" ");
-
-      fullText += pageText + "\n";
+    if (!res.ok) {
+      throw new Error(data.error || "Failed to read PDF");
     }
 
-    const cleaned = fullText.trim();
-
-    if (!cleaned || cleaned.length < 50) {
-      throw new Error("Could not read this PDF. It may be scanned or image-based. Please upload DOCX or paste resume text.");
-    }
-
-    return cleaned;
+    return data.text || "";
   }
 
-  throw new Error("Unsupported file type. Please upload DOCX, TXT, or a small text-based PDF.");
+  throw new Error("Unsupported file type. Please upload DOCX, TXT, or PDF.");
 }
 
 function downloadText(filename: string, text: string) {
