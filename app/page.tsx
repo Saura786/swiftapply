@@ -158,6 +158,149 @@ function statusColor(status: string) {
   return "#eef2ff";
 }
 
+function Input({
+  label,
+  value,
+  onChange,
+  type = "text",
+  placeholder = "",
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  type?: string;
+  placeholder?: string;
+}) {
+  return (
+    <div className="field">
+      <label>{label}</label>
+      <input
+        type={type}
+        value={value}
+        placeholder={placeholder}
+        autoComplete={type === "email" ? "email" : type === "password" ? "current-password" : "off"}
+        inputMode={type === "email" ? "email" : "text"}
+        spellCheck={false}
+        autoCapitalize="none"
+        autoCorrect="off"
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </div>
+  );
+}
+
+function TextArea({
+  label,
+  value,
+  onChange,
+  rows = 9,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  rows?: number;
+}) {
+  return (
+    <div className="field">
+      <label>{label}</label>
+      <textarea value={value} onChange={(e) => onChange(e.target.value)} rows={rows} />
+    </div>
+  );
+}
+
+function Button({
+  children,
+  onClick,
+  loading = false,
+  secondary = false,
+  danger = false,
+}: {
+  children: React.ReactNode;
+  onClick: () => void;
+  loading?: boolean;
+  secondary?: boolean;
+  danger?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={loading}
+      className={`btn ${secondary ? "secondary" : ""} ${danger ? "danger" : ""}`}
+    >
+      {loading ? "Generating..." : children}
+    </button>
+  );
+}
+
+function Card({ children }: { children: React.ReactNode }) {
+  return <div className="card">{children}</div>;
+}
+
+function ResultBox({
+  title,
+  text,
+  onClear,
+  fileBase,
+}: {
+  title: string;
+  text: string;
+  onClear: () => void;
+  fileBase: string;
+}) {
+  if (!text) return null;
+
+  return (
+    <div className="result">
+      <div className="resultTop">
+        <h3>{title}</h3>
+
+        <div className="actions">
+          <Button secondary onClick={() => downloadWord(`${fileBase}.doc`, text)}>Word</Button>
+          <Button secondary onClick={() => printPDF(title, text)}>PDF</Button>
+          <Button secondary onClick={() => downloadText(`${fileBase}.txt`, text)}>TXT</Button>
+          <Button danger onClick={onClear}>Clear</Button>
+        </div>
+      </div>
+
+      {text}
+    </div>
+  );
+}
+
+function ResumeUpload({
+  label,
+  setResume,
+}: {
+  label: string;
+  setResume: (value: string) => void;
+}) {
+  const [status, setStatus] = useState("");
+
+  async function upload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setStatus("Reading file...");
+      const text = await extractTextFromFile(file);
+      setResume(shortText(text));
+      setStatus(`Uploaded: ${file.name}`);
+    } catch (err: any) {
+      setStatus("Error: " + err.message);
+    }
+  }
+
+  return (
+    <div className="upload">
+      <strong>{label}</strong>
+      <p>Upload DOCX or TXT. PDF upload will be added later.</p>
+      <input type="file" accept=".docx,.txt" onChange={upload} />
+      {status && <p className="status">{status}</p>}
+    </div>
+  );
+}
+
 export default function Page() {
   const [user, setUser] = useState<any>(null);
   const [authEmail, setAuthEmail] = useState("");
@@ -546,94 +689,6 @@ ${role}
 
   function deleteJob(id: number) {
     setJobs(jobs.filter((j) => j.id !== id));
-  }
-
-  function Input({ label, value, onChange, type = "text", placeholder = "" }: any) {
-    return (
-      <div className="field">
-        <label>{label}</label>
-        <input
-          type={type}
-          value={value}
-          placeholder={placeholder}
-          autoComplete={type === "email" ? "email" : type === "password" ? "current-password" : "off"}
-          inputMode={type === "email" ? "email" : "text"}
-          spellCheck={false}
-          autoCapitalize="none"
-          autoCorrect="off"
-          onChange={(e) => onChange(e.target.value)}
-        />
-      </div>
-    );
-  }
-
-  function TextArea({ label, value, onChange, rows = 9 }: any) {
-    return (
-      <div className="field">
-        <label>{label}</label>
-        <textarea value={value} onChange={(e) => onChange(e.target.value)} rows={rows} />
-      </div>
-    );
-  }
-
-  function Button({ children, onClick, loading = false, secondary = false, danger = false }: any) {
-    return (
-      <button onClick={onClick} disabled={loading} className={`btn ${secondary ? "secondary" : ""} ${danger ? "danger" : ""}`}>
-        {loading ? "Generating..." : children}
-      </button>
-    );
-  }
-
-  function Card({ children }: any) {
-    return <div className="card">{children}</div>;
-  }
-
-  function ResultBox({ title, text, onClear, fileBase }: any) {
-    if (!text) return null;
-
-    return (
-      <div className="result">
-        <div className="resultTop">
-          <h3>{title}</h3>
-
-          <div className="actions">
-            <Button secondary onClick={() => downloadWord(`${fileBase}.doc`, text)}>Word</Button>
-            <Button secondary onClick={() => printPDF(title, text)}>PDF</Button>
-            <Button secondary onClick={() => downloadText(`${fileBase}.txt`, text)}>TXT</Button>
-            <Button danger onClick={onClear}>Clear</Button>
-          </div>
-        </div>
-
-        {text}
-      </div>
-    );
-  }
-
-  function ResumeUpload({ label, setResume }: any) {
-    const [status, setStatus] = useState("");
-
-    async function upload(e: any) {
-      const file = e.target.files?.[0];
-      if (!file) return;
-
-      try {
-        setStatus("Reading file...");
-        const text = await extractTextFromFile(file);
-        setResume(shortText(text));
-        setStatus(`Uploaded: ${file.name}`);
-      } catch (err: any) {
-        setStatus("Error: " + err.message);
-      }
-    }
-
-    return (
-      <div className="upload">
-        <strong>{label}</strong>
-        <p>Upload DOCX or TXT. PDF upload will be added later.</p>
-        <input type="file" accept=".docx,.txt" onChange={upload} />
-        {status && <p className="status">{status}</p>}
-      </div>
-    );
   }
 
   if (!user) {
