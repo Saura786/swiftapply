@@ -3,77 +3,106 @@ import PDFParser from "pdf2json";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-function decodeText(value: string) {
+const MAX_PDF_SIZE_MB = 5;
+const MAX_TEXT_LENGTH = 40000;
+
+function decodePdfText(value: string) {
   try {
-    return decodeURIComponent(value);
+    return decodeURIComponent(value || "");
   } catch {
     return value || "";
   }
 }
 
-function extractTextFromPdfJson(pdfData: any) {
-  let output = "";
-
-  for (const page of pdfData?.Pages || []) {
-    const items = (page.Texts || [])
-      .map((item: any) => {
-        const text = (item.R || [])
-          .map((run: any) => decodeText(run.T || ""))
-          .join("");
-
-        return {
-          x: Number(item.x || 0),
-          y: Number(item.y || 0),
-          text,
-        };
-      })
-      .filter((item: any) => item.text.trim());
-
-    items.sort((a: any, b: any) => {
-      if (Math.abs(a.y - b.y) > 0.4) return a.y - b.y;
-      return a.x - b.x;
-    });
-
-    let currentY: number | null = null;
-    let line = "";
-    let lastX = 0;
-
-    for (const item of items) {
-      const sameLine = currentY !== null && Math.abs(item.y - currentY) < 0.4;
-
-      if (!sameLine) {
-        if (line.trim()) output += line.trim() + "\n";
-        line = item.text;
-        currentY = item.y;
-        lastX = item.x;
-      } else {
-        const gap = item.x - lastX;
-
-        if (gap > 1.4) {
-          line += " " + item.text;
-        } else {
-          line += item.text;
-        }
-
-        lastX = item.x;
-      }
-    }
-
-    if (line.trim()) output += line.trim() + "\n";
-    output += "\n";
-  }
-
-  return output.trim();
-}
-
-function cleanFinalText(text: string) {
+function cleanText(text: string) {
   return String(text || "")
     .replace(/\r/g, "\n")
     .replace(/[ \t]{2,}/g, " ")
     .replace(/\n{3,}/g, "\n\n")
     .replace(/\s+([,.:;])/g, "$1")
     .replace(/([•])\s*/g, "\n• ")
+    .replace(/\bG oogle\b/g, "Google")
+    .replace(/\bG ujar\b/g, "Gujar")
+    .replace(/\bC RM\b/g, "CRM")
+    .replace(/\bC PL\b/g, "CPL")
+    .replace(/\bC TR\b/g, "CTR")
+    .replace(/\bC PA\b/g, "CPA")
+    .replace(/\bG A4\b/g, "GA4")
+    .replace(/\bG TM\b/g, "GTM")
+    .replace(/\bC anva\b/g, "Canva")
+    .replace(/\bC loud\b/g, "Cloud")
+    .replace(/\bC ontent\b/g, "Content")
+    .replace(/\bC ampaign\b/g, "Campaign")
+    .replace(/\bC onversion/g, "Conversion")
+    .replace(/\bC reative\b/g, "Creative")
+    .replace(/\bC apture\b/g, "Capture")
+    .replace(/\bC hat G PT\b/g, "ChatGPT")
+    .replace(/\bPROFESSIONALEXPERIEN C E\b/g, "PROFESSIONAL EXPERIENCE")
+    .replace(/\bC AREERHI G HLI G HTS\b/g, "CAREER HIGHLIGHTS")
+    .replace(/\bC ORE C OMPETEN C IES\b/g, "CORE COMPETENCIES")
     .trim();
+}
+
+function extractTextFromPdfData(pdfData: any) {
+  let finalText = "";
+
+  for (const page of pdfData?.Pages || []) {
+    const rows: Record<string, any[]> = {};
+
+    for (const item of page.Texts || []) {
+      const y = Math.round(Number(item.y || 0) * 10) / 10;
+
+      const text = (item.R || [])
+        .map((run: any) => decodePdfText(run.T))
+        .join("");
+
+      if (!text.trim()) continue;
+
+      if (!rows[y]) rows[y] = [];
+
+      rows[y].push({
+        x: Number(item.x || 0),
+        w: Number(item.w || 0),
+        text,
+      });
+    }
+
+    const sortedRows = Object.entries(rows).sort(
+      ([a], [b]) => Number(a) - Number(b)
+    );
+
+    for (const [, items] of sortedRows) {
+      items.sort((a, b) => a.x - b.x);
+
+      let line = "";
+      let lastRight = 0;
+
+      for (const item of items) {
+        const estimatedWidth =
+          item.w && item.w > 0
+            ? item.w
+            : Math.max(item.text.length * 0.16, 0.5);
+
+        const gap = item.x - lastRight;
+
+        if (!line) {
+          line = item.text;
+        } else if (gap > 0.18) {
+          line += " " + item.text;
+        } else {
+          line += item.text;
+        }
+
+        lastRight = item.x + estimatedWidth;
+      }
+
+      if (line.trim()) finalText += line.trim() + "\n";
+    }
+
+    finalText += "\n";
+  }
+
+  return cleanText(finalText);
 }
 
 export async function POST(req: Request) {
@@ -92,16 +121,18 @@ export async function POST(req: Request) {
       );
     }
 
-    if (file.size > 2 * 1024 * 1024) {
+    if (file.size > MAX_PDF_SIZE_MB * 1024 * 1024) {
       return Response.json(
-        { error: "PDF too large. Please upload a text-based PDF under 2MB." },
+        {
+          error: `PDF too large. Please upload a text-based PDF under ${MAX_PDF_SIZE_MB}MB.`,
+        },
         { status: 400 }
       );
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
 
-    const rawText = await new Promise<string>((resolve, reject) => {
+    const extractedText = await new Promise<string>((resolve, reject) => {
       const pdfParser = new PDFParser();
 
       pdfParser.on("pdfParser_dataError", (errData: any) => {
@@ -109,16 +140,13 @@ export async function POST(req: Request) {
       });
 
       pdfParser.on("pdfParser_dataReady", (pdfData: any) => {
-        const extracted = extractTextFromPdfJson(pdfData);
-        resolve(extracted);
+        resolve(extractTextFromPdfData(pdfData));
       });
 
       pdfParser.parseBuffer(buffer);
     });
 
-    const text = cleanFinalText(rawText);
-
-    if (!text || text.length < 50) {
+    if (!extractedText || extractedText.length < 50) {
       return Response.json(
         {
           error:
@@ -129,7 +157,7 @@ export async function POST(req: Request) {
     }
 
     return Response.json({
-      text: text.slice(0, 20000),
+      text: extractedText.slice(0, MAX_TEXT_LENGTH),
     });
   } catch (error: any) {
     return Response.json(

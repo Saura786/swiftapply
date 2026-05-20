@@ -84,8 +84,8 @@ async function extractTextFromFile(file: File) {
   }
 
   if (name.endsWith(".pdf")) {
-    if (file.size > 2 * 1024 * 1024) {
-      throw new Error("PDF too large. Please upload a text-based PDF under 2MB, or use DOCX.");
+    if (file.size > 5 * 1024 * 1024) {
+      throw new Error("PDF too large. Please upload a text-based PDF under 4MB, or use DOCX.");
     }
 
     const formData = new FormData();
