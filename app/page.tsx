@@ -8,8 +8,29 @@ const APP_NAME = "SwiftApply";
 const DAILY_LIMIT = 3;
 const MAX_INPUT = 7000;
 
-const TABS = ["Dashboard", "Resume Builder", "ATS Score", "Cover Letter", "Strength Analysis", "Interview Prep", "Application Tracker", "Follow-Up"];
-const STATUSES = ["Saved", "Applied", "Follow-Up Needed", "Interview", "Interviewed", "Documentation Needed", "Visa", "Offer", "Rejected", "Ghosted"];
+const TABS = [
+  "Dashboard",
+  "Resume Builder",
+  "ATS Score",
+  "Cover Letter",
+  "Strength Analysis",
+  "Interview Prep",
+  "Application Tracker",
+  "Follow-Up",
+];
+
+const STATUSES = [
+  "Saved",
+  "Applied",
+  "Follow-Up Needed",
+  "Interview",
+  "Interviewed",
+  "Documentation Needed",
+  "Visa",
+  "Offer",
+  "Rejected",
+  "Ghosted",
+];
 
 const SAMPLE_RESUME = `John Doe
 Software Engineer | john@email.com | Dublin, Ireland
@@ -34,7 +55,8 @@ function shortText(text: string) {
 }
 
 function todayKey(email: string) {
-  return `swiftapply-usage-${email}-${new Date().toISOString().slice(0, 10)}`;
+  const today = new Date().toISOString().slice(0, 10);
+  return `swiftapply-usage-${email}-${today}`;
 }
 
 function getUsage(email: string) {
@@ -48,12 +70,15 @@ function increaseUsage(email: string) {
 
 async function extractTextFromFile(file: File) {
   const name = file.name.toLowerCase();
+
   if (name.endsWith(".txt")) return await file.text();
+
   if (name.endsWith(".docx")) {
     const buffer = await file.arrayBuffer();
     const result = await mammoth.extractRawText({ arrayBuffer: buffer });
     return result.value;
   }
+
   throw new Error("Please upload DOCX or TXT. PDF upload will be added later.");
 }
 
@@ -81,6 +106,7 @@ function downloadWord(filename: string, text: string) {
 function printPDF(title: string, text: string) {
   const win = window.open("", "_blank");
   if (!win) return;
+
   win.document.write(`
     <html>
       <head>
@@ -96,13 +122,25 @@ function printPDF(title: string, text: string) {
       </body>
     </html>
   `);
+
   win.document.close();
 }
 
 function exportTrackerCSV(jobs: any[]) {
   const headers = ["Company", "Role", "Date Applied", "Follow Up Date", "Status", "Notes"];
-  const rows = jobs.map((job) => [job.company, job.role, job.appliedDate, job.followUpDate, job.status, job.notes]);
-  const csv = [headers, ...rows].map((row) => row.map((cell) => `"${String(cell || "").replaceAll('"', '""')}"`).join(",")).join("\n");
+  const rows = jobs.map((job) => [
+    job.company,
+    job.role,
+    job.appliedDate,
+    job.followUpDate,
+    job.status,
+    job.notes,
+  ]);
+
+  const csv = [headers, ...rows]
+    .map((row) => row.map((cell) => `"${String(cell || "").replaceAll('"', '""')}"`).join(","))
+    .join("\n");
+
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -131,6 +169,7 @@ export default function Page() {
   const [resume1, setResume1] = useState(SAMPLE_RESUME);
   const [resume2, setResume2] = useState("");
   const [activeResume, setActiveResume] = useState("resume1");
+
   const resume = activeResume === "resume1" ? resume1 : resume2;
   const setResume = activeResume === "resume1" ? setResume1 : setResume2;
 
@@ -159,14 +198,19 @@ export default function Page() {
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
     });
+
     return () => subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
     const saved = localStorage.getItem("swiftapply-state");
+
     if (saved) {
       const s = JSON.parse(saved);
       setResume1(s.resume1 || SAMPLE_RESUME);
@@ -185,9 +229,23 @@ export default function Page() {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem("swiftapply-state", JSON.stringify({
-      resume1, resume2, jd, company, role, tailoredResume, atsScore, coverLetter, analysis, interviewPrep, followUp, jobs,
-    }));
+    localStorage.setItem(
+      "swiftapply-state",
+      JSON.stringify({
+        resume1,
+        resume2,
+        jd,
+        company,
+        role,
+        tailoredResume,
+        atsScore,
+        coverLetter,
+        analysis,
+        interviewPrep,
+        followUp,
+        jobs,
+      })
+    );
   }, [resume1, resume2, jd, company, role, tailoredResume, atsScore, coverLetter, analysis, interviewPrep, followUp, jobs]);
 
   async function loginOrSignup() {
@@ -199,15 +257,25 @@ export default function Page() {
     setAuthLoading(true);
 
     if (authMode === "signup") {
-      const { error } = await supabase.auth.signUp({ email: authEmail, password: authPassword });
+      const { error } = await supabase.auth.signUp({
+        email: authEmail.trim(),
+        password: authPassword,
+      });
+
       setAuthLoading(false);
+
       if (error) alert(error.message);
       else alert("Account created. Please log in now.");
       return;
     }
 
-    const { error } = await supabase.auth.signInWithPassword({ email: authEmail, password: authPassword });
+    const { error } = await supabase.auth.signInWithPassword({
+      email: authEmail.trim(),
+      password: authPassword,
+    });
+
     setAuthLoading(false);
+
     if (error) alert(error.message);
   }
 
@@ -218,6 +286,7 @@ export default function Page() {
 
   async function protectedCall(prompt: string) {
     if (!user?.email) throw new Error("Please login first.");
+
     if (getUsage(user.email) >= DAILY_LIMIT) {
       throw new Error(`Daily test limit reached. You can generate ${DAILY_LIMIT} items per day during beta testing.`);
     }
@@ -234,22 +303,31 @@ export default function Page() {
       });
 
       clearTimeout(timeout);
+
       const data = await res.json();
+
       if (!res.ok) throw new Error(data.error || "API failed");
 
       increaseUsage(user.email);
       return String(data.text || "").replaceAll("#", "").trim();
     } catch (err: any) {
       clearTimeout(timeout);
-      if (err.name === "AbortError") throw new Error("Request took too long. Try shorter text.");
+
+      if (err.name === "AbortError") {
+        throw new Error("Request took too long. Try a shorter resume or job description.");
+      }
+
       throw err;
     }
   }
 
   async function generateTailoredResume() {
     setLoading("Building a complete tailored resume...");
+
     try {
-      const text = await protectedCall(`Create a COMPLETE tailored resume. Keep it truthful. Do not invent details. No markdown symbols. No explanation after the resume.
+      const text = await protectedCall(`
+Create a COMPLETE tailored resume. Keep it truthful. Do not invent details.
+No markdown symbols. No explanation after the resume.
 
 Resume:
 ${shortText(resume)}
@@ -261,7 +339,9 @@ Target role:
 ${role}
 
 Job description:
-${shortText(jd)}`);
+${shortText(jd)}
+`);
+
       setTailoredResume(text);
     } catch (err: any) {
       setTailoredResume("Error: " + err.message);
@@ -272,8 +352,12 @@ ${shortText(jd)}`);
 
   async function generateATSScore() {
     setLoading("Calculating ATS score and keyword match...");
+
     try {
-      const text = await protectedCall(`Give ATS Compatibility Score out of 100. Include verdict, matching keywords, missing keywords, formatting risk, and 5 improvements. No markdown symbols.
+      const text = await protectedCall(`
+Give ATS Compatibility Score out of 100.
+Include verdict, matching keywords, missing keywords, formatting risk, and 5 improvements.
+No markdown symbols.
 
 Resume:
 ${shortText(resume)}
@@ -285,7 +369,9 @@ Target role:
 ${role}
 
 Job description:
-${shortText(jd)}`);
+${shortText(jd)}
+`);
+
       setAtsScore(text);
     } catch (err: any) {
       setAtsScore("Error: " + err.message);
@@ -296,8 +382,11 @@ ${shortText(jd)}`);
 
   async function generateCoverLetter() {
     setLoading("Writing tailored cover letter...");
+
     try {
-      const text = await protectedCall(`Write a tailored cover letter under 350 words. Use only real resume details. No fake experience. No markdown symbols.
+      const text = await protectedCall(`
+Write a tailored cover letter under 350 words.
+Use only real resume details. No fake experience. No markdown symbols.
 
 Resume:
 ${shortText(resume)}
@@ -309,7 +398,9 @@ Target role:
 ${role}
 
 Job description:
-${shortText(jd)}`);
+${shortText(jd)}
+`);
+
       setCoverLetter(text);
     } catch (err: any) {
       setCoverLetter("Error: " + err.message);
@@ -320,8 +411,12 @@ ${shortText(jd)}`);
 
   async function generateAnalysis() {
     setLoading("Analysing strengths and weaknesses...");
+
     try {
-      const text = await protectedCall(`Compare resume with job description. Give match score, strengths, weaknesses, missing keywords, changes to make, and skills to focus on. No markdown symbols.
+      const text = await protectedCall(`
+Compare resume with job description.
+Give match score, strengths, weaknesses, missing keywords, changes to make, and skills to focus on.
+No markdown symbols.
 
 Resume:
 ${shortText(resume)}
@@ -333,7 +428,9 @@ Target role:
 ${role}
 
 Job description:
-${shortText(jd)}`);
+${shortText(jd)}
+`);
+
       setAnalysis(text);
     } catch (err: any) {
       setAnalysis("Error: " + err.message);
@@ -344,8 +441,12 @@ ${shortText(jd)}`);
 
   async function generateInterviewPrep() {
     setLoading("Preparing interview guide...");
+
     try {
-      const text = await protectedCall(`Create interview prep for this candidate. Include intro, technical questions, behavioural questions, STAR answers, questions to ask, and company research checklist. No markdown symbols.
+      const text = await protectedCall(`
+Create interview prep for this candidate.
+Include intro, likely technical questions, behavioural questions, STAR answers, questions to ask, and company research checklist.
+No markdown symbols.
 
 Resume:
 ${shortText(resume)}
@@ -357,7 +458,9 @@ Target role:
 ${role}
 
 Job description:
-${shortText(jd)}`);
+${shortText(jd)}
+`);
+
       setInterviewPrep(text);
     } catch (err: any) {
       setInterviewPrep("Error: " + err.message);
@@ -368,14 +471,18 @@ ${shortText(jd)}`);
 
   async function generateFollowUp() {
     setLoading("Writing follow-up message...");
+
     try {
-      const text = await protectedCall(`Write a short professional follow-up email. No markdown symbols.
+      const text = await protectedCall(`
+Write a short professional follow-up email. No markdown symbols.
 
 Target company:
 ${company}
 
 Target role:
-${role}`);
+${role}
+`);
+
       setFollowUp(text);
     } catch (err: any) {
       setFollowUp("Error: " + err.message);
@@ -389,7 +496,20 @@ ${role}`);
       alert("Add target company and target role first.");
       return;
     }
-    setJobs([...jobs, { id: Date.now(), company, role, status, appliedDate: new Date().toISOString().slice(0, 10), followUpDate: "", notes: "" }]);
+
+    setJobs([
+      ...jobs,
+      {
+        id: Date.now(),
+        company,
+        role,
+        status,
+        appliedDate: new Date().toISOString().slice(0, 10),
+        followUpDate: "",
+        notes: "",
+      },
+    ]);
+
     setActiveTab("Application Tracker");
   }
 
@@ -398,7 +518,20 @@ ${role}`);
       alert("Add target company and target role.");
       return;
     }
-    setJobs([...jobs, { id: Date.now(), company: trackerCompany, role: trackerRole, appliedDate: trackerAppliedDate, followUpDate: trackerFollowUpDate, status: trackerStatus, notes: trackerNotes }]);
+
+    setJobs([
+      ...jobs,
+      {
+        id: Date.now(),
+        company: trackerCompany,
+        role: trackerRole,
+        appliedDate: trackerAppliedDate,
+        followUpDate: trackerFollowUpDate,
+        status: trackerStatus,
+        notes: trackerNotes,
+      },
+    ]);
+
     setTrackerCompany("");
     setTrackerRole("");
     setTrackerAppliedDate(new Date().toISOString().slice(0, 10));
@@ -419,7 +552,17 @@ ${role}`);
     return (
       <div className="field">
         <label>{label}</label>
-        <input type={type} value={value} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} />
+        <input
+          type={type}
+          value={value}
+          placeholder={placeholder}
+          autoComplete={type === "email" ? "email" : type === "password" ? "current-password" : "off"}
+          inputMode={type === "email" ? "email" : "text"}
+          spellCheck={false}
+          autoCapitalize="none"
+          autoCorrect="off"
+          onChange={(e) => onChange(e.target.value)}
+        />
       </div>
     );
   }
@@ -447,10 +590,12 @@ ${role}`);
 
   function ResultBox({ title, text, onClear, fileBase }: any) {
     if (!text) return null;
+
     return (
       <div className="result">
         <div className="resultTop">
           <h3>{title}</h3>
+
           <div className="actions">
             <Button secondary onClick={() => downloadWord(`${fileBase}.doc`, text)}>Word</Button>
             <Button secondary onClick={() => printPDF(title, text)}>PDF</Button>
@@ -458,6 +603,7 @@ ${role}`);
             <Button danger onClick={onClear}>Clear</Button>
           </div>
         </div>
+
         {text}
       </div>
     );
@@ -465,9 +611,11 @@ ${role}`);
 
   function ResumeUpload({ label, setResume }: any) {
     const [status, setStatus] = useState("");
+
     async function upload(e: any) {
       const file = e.target.files?.[0];
       if (!file) return;
+
       try {
         setStatus("Reading file...");
         const text = await extractTextFromFile(file);
@@ -477,6 +625,7 @@ ${role}`);
         setStatus("Error: " + err.message);
       }
     }
+
     return (
       <div className="upload">
         <strong>{label}</strong>
@@ -491,13 +640,42 @@ ${role}`);
     return (
       <>
         <style>{styles}</style>
+
         <main className="loginPage">
           <div className="loginCard">
             <h1>SwiftApply</h1>
             <p>AI-powered job application workspace</p>
 
-            <Input label="Email" type="email" value={authEmail} onChange={setAuthEmail} placeholder="you@example.com" />
-            <Input label="Password" type="password" value={authPassword} onChange={setAuthPassword} placeholder="Minimum 6 characters" />
+            <div className="field">
+              <label>Email</label>
+              <input
+                type="email"
+                value={authEmail}
+                placeholder="you@example.com"
+                autoComplete="email"
+                inputMode="email"
+                spellCheck={false}
+                autoCapitalize="none"
+                autoCorrect="off"
+                enterKeyHint="next"
+                onChange={(e) => setAuthEmail(e.target.value)}
+              />
+            </div>
+
+            <div className="field">
+              <label>Password</label>
+              <input
+                type="password"
+                value={authPassword}
+                placeholder="Minimum 6 characters"
+                autoComplete="current-password"
+                spellCheck={false}
+                autoCapitalize="none"
+                autoCorrect="off"
+                enterKeyHint="done"
+                onChange={(e) => setAuthPassword(e.target.value)}
+              />
+            </div>
 
             <button className="mainLoginBtn" onClick={loginOrSignup} disabled={authLoading}>
               {authLoading ? "Please wait..." : authMode === "login" ? "Login" : "Create Account"}
@@ -515,6 +693,7 @@ ${role}`);
   return (
     <>
       <style>{styles}</style>
+
       <main className="app">
         <aside className="sidebar">
           <h1>{APP_NAME}</h1>
@@ -563,6 +742,7 @@ ${role}`);
 
               <div className="twoCol">
                 <ResumeUpload label="Upload Selected Resume" setResume={setResume} />
+
                 <div>
                   <Input label="Target Company" value={company} onChange={setCompany} placeholder="Example: Google" />
                   <Input label="Target Role" value={role} onChange={setRole} placeholder="Example: Product Analyst" />
@@ -641,16 +821,20 @@ ${role}`);
 
               <div className="jobList">
                 {jobs.length === 0 && <p>No applications tracked yet.</p>}
+
                 {jobs.map((job) => (
                   <div key={job.id} className="job" style={{ background: statusColor(job.status) }}>
                     <div>
                       <strong>{job.company}</strong> — {job.role}
                       <p>Applied: {job.appliedDate || "Not set"} | Follow-up: {job.followUpDate || "Not set"}</p>
                     </div>
+
                     <Button danger onClick={() => deleteJob(job.id)}>Delete</Button>
+
                     <select value={job.status} onChange={(e) => updateJob(job.id, "status", e.target.value)}>
                       {STATUSES.map((s) => <option key={s}>{s}</option>)}
                     </select>
+
                     <input type="date" value={job.followUpDate} onChange={(e) => updateJob(job.id, "followUpDate", e.target.value)} />
                     <input placeholder="Notes" value={job.notes} onChange={(e) => updateJob(job.id, "notes", e.target.value)} />
                   </div>
@@ -675,10 +859,19 @@ ${role}`);
 const styles = `
 * { box-sizing: border-box; }
 body { margin: 0; }
+
 input, textarea, select {
   background: white !important;
   color: #111827 !important;
+  -webkit-text-fill-color: #111827 !important;
 }
+
+input::placeholder,
+textarea::placeholder {
+  color: #9ca3af !important;
+  -webkit-text-fill-color: #9ca3af !important;
+}
+
 .loginPage {
   min-height: 100vh;
   background: linear-gradient(135deg,#111827,#4f46e5);
@@ -688,6 +881,7 @@ input, textarea, select {
   padding: 20px;
   font-family: Arial, sans-serif;
 }
+
 .loginCard {
   width: 100%;
   max-width: 430px;
@@ -696,9 +890,19 @@ input, textarea, select {
   padding: 32px;
   box-shadow: 0 28px 80px rgba(0,0,0,0.25);
 }
-.loginCard h1 { margin: 0; font-size: 42px; color: #111827; }
-.loginCard p { color: #64748b; }
-.mainLoginBtn, .switchBtn {
+
+.loginCard h1 {
+  margin: 0;
+  font-size: 42px;
+  color: #111827;
+}
+
+.loginCard p {
+  color: #64748b;
+}
+
+.mainLoginBtn,
+.switchBtn {
   width: 100%;
   padding: 15px;
   border-radius: 15px;
@@ -706,17 +910,20 @@ input, textarea, select {
   font-size: 15px;
   cursor: pointer;
 }
+
 .mainLoginBtn {
   border: none;
   background: #4f46e5;
   color: white;
 }
+
 .switchBtn {
   border: 1px solid #ddd;
   background: white;
   color: #111827;
   margin-top: 12px;
 }
+
 .app {
   min-height: 100vh;
   display: grid;
@@ -724,26 +931,45 @@ input, textarea, select {
   background: #f8fafc;
   font-family: Arial, sans-serif;
 }
+
 .sidebar {
   background: #111827;
   color: white;
   padding: 24px;
 }
-.sidebar h1 { margin: 0; font-size: 28px; }
-.sidebar p, .userEmail { color: #cbd5e1; font-size: 13px; }
+
+.sidebar h1 {
+  margin: 0;
+  font-size: 28px;
+}
+
+.sidebar p,
+.userEmail {
+  color: #cbd5e1;
+  font-size: 13px;
+}
+
 .usage {
   background: #1f2937;
   padding: 12px;
   border-radius: 14px;
   margin-top: 18px;
 }
-.usage span { display: block; color: #cbd5e1; font-size: 13px; margin-top: 4px; }
+
+.usage span {
+  display: block;
+  color: #cbd5e1;
+  font-size: 13px;
+  margin-top: 4px;
+}
+
 nav {
   display: flex;
   flex-direction: column;
   gap: 8px;
   margin-top: 24px;
 }
+
 nav button {
   text-align: left;
   padding: 12px 14px;
@@ -754,7 +980,11 @@ nav button {
   font-weight: 700;
   cursor: pointer;
 }
-nav button.active { background: #4f46e5; }
+
+nav button.active {
+  background: #4f46e5;
+}
+
 .logout {
   margin-top: 12px;
   padding: 10px 14px;
@@ -764,9 +994,20 @@ nav button.active { background: #4f46e5; }
   color: white;
   cursor: pointer;
 }
-.content { padding: 30px; }
-.pageTitle h2 { margin: 0; font-size: 34px; }
-.pageTitle p { color: #64748b; }
+
+.content {
+  padding: 30px;
+}
+
+.pageTitle h2 {
+  margin: 0;
+  font-size: 34px;
+}
+
+.pageTitle p {
+  color: #64748b;
+}
+
 .card {
   background: white;
   border: 1px solid #e5e7eb;
@@ -774,32 +1015,50 @@ nav button.active { background: #4f46e5; }
   padding: 24px;
   box-shadow: 0 18px 50px rgba(0,0,0,0.06);
 }
+
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fit,minmax(220px,1fr));
   gap: 18px;
 }
-.grid b { font-size: 32px; }
+
+.grid b {
+  font-size: 32px;
+}
+
 .twoCol {
   display: grid;
   grid-template-columns: repeat(auto-fit,minmax(240px,1fr));
   gap: 16px;
 }
-.field { margin-bottom: 16px; }
+
+.field {
+  margin-bottom: 16px;
+}
+
 .field label {
   display: block;
   font-weight: 800;
   margin-bottom: 8px;
   color: #111827;
 }
-.field input, .field textarea, .field select, select, input {
+
+.field input,
+.field textarea,
+.field select,
+select,
+input {
   width: 100%;
   padding: 13px;
   border-radius: 14px;
   border: 1px solid #d1d5db;
-  font-size: 14px;
+  font-size: 16px;
 }
-.field textarea { line-height: 1.6; }
+
+.field textarea {
+  line-height: 1.6;
+}
+
 .btn {
   padding: 12px 18px;
   border-radius: 999px;
@@ -809,22 +1068,26 @@ nav button.active { background: #4f46e5; }
   font-weight: 800;
   cursor: pointer;
 }
+
 .btn.secondary {
   background: white;
   color: #111827;
   border: 1px solid #ddd;
 }
+
 .btn.danger {
   background: #fff1f2;
   color: #be123c;
   border: 1px solid #fecdd3;
 }
+
 .actions {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
   margin: 12px 0;
 }
+
 .result {
   margin-top: 24px;
   padding: 22px;
@@ -835,20 +1098,29 @@ nav button.active { background: #4f46e5; }
   line-height: 1.7;
   overflow-wrap: anywhere;
 }
+
 .resultTop {
   display: flex;
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
 }
+
 .upload {
   padding: 18px;
   border-radius: 18px;
   border: 1px dashed #9ca3af;
   background: #f9fafb;
 }
-.upload p { color: #666; }
-.status { color: #4f46e5 !important; }
+
+.upload p {
+  color: #666;
+}
+
+.status {
+  color: #4f46e5 !important;
+}
+
 .loading {
   padding: 16px;
   border-radius: 18px;
@@ -857,6 +1129,7 @@ nav button.active { background: #4f46e5; }
   font-weight: 700;
   margin-bottom: 18px;
 }
+
 .job {
   padding: 18px;
   border-radius: 18px;
@@ -865,47 +1138,61 @@ nav button.active { background: #4f46e5; }
   display: grid;
   gap: 12px;
 }
+
 @media (max-width: 800px) {
   .app {
     display: block;
   }
+
   .sidebar {
     position: static;
     padding: 18px;
   }
+
   nav {
     flex-direction: row;
     overflow-x: auto;
     padding-bottom: 8px;
   }
+
   nav button {
     white-space: nowrap;
     min-width: max-content;
     font-size: 13px;
   }
+
   .content {
     padding: 16px;
   }
+
   .pageTitle h2 {
     font-size: 28px;
   }
+
   .card {
     padding: 18px;
     border-radius: 20px;
   }
+
   .loginCard {
     padding: 24px;
     border-radius: 22px;
   }
+
   .loginCard h1 {
     font-size: 34px;
   }
-  .btn, .mainLoginBtn, .switchBtn {
+
+  .btn,
+  .mainLoginBtn,
+  .switchBtn {
     width: 100%;
   }
+
   .actions {
     flex-direction: column;
   }
+
   .resultTop {
     flex-direction: column;
   }
