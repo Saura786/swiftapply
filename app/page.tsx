@@ -56,7 +56,7 @@ function shortText(text: string) {
 
 function todayKey(email: string) {
   const today = new Date().toISOString().slice(0, 10);
-  return `ApplyIQ-usage-${email}-${today}`;
+  return `applyiq-usage-${email}-${today}`;
 }
 
 function getUsage(email: string) {
@@ -85,7 +85,7 @@ async function extractTextFromFile(file: File) {
 
   if (name.endsWith(".pdf")) {
     if (file.size > 5 * 1024 * 1024) {
-      throw new Error("PDF too large. Please upload a text-based PDF under 4MB, or use DOCX.");
+      throw new Error("PDF too large. Please upload a text-based PDF under 5MB, or use DOCX.");
     }
 
     const formData = new FormData();
@@ -171,7 +171,7 @@ function exportTrackerCSV(jobs: any[]) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "ApplyIQ-application-tracker.csv";
+  a.download = "applyiq-application-tracker.csv";
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -320,7 +320,7 @@ function ResumeUpload({
   return (
     <div className="upload">
       <strong>{label}</strong>
-      <p>Upload DOCX, TXT, or small text-based PDF under 2MB. DOCX is recommended.</p>
+      <p>Upload DOCX, TXT, or small text-based PDF under 5MB. DOCX is recommended.</p>
       <input type="file" accept=".docx,.txt,.pdf" onChange={upload} />
       {status && <p className="status">{status}</p>}
     </div>
@@ -378,7 +378,7 @@ export default function Page() {
   }, []);
 
   useEffect(() => {
-    const saved = localStorage.getItem("ApplyIQ-state");
+    const saved = localStorage.getItem("applyiq-state");
 
     if (saved) {
       const s = JSON.parse(saved);
@@ -399,7 +399,7 @@ export default function Page() {
 
   useEffect(() => {
     localStorage.setItem(
-      "ApplyIQ-state",
+      "applyiq-state",
       JSON.stringify({
         resume1,
         resume2,
@@ -491,23 +491,57 @@ export default function Page() {
   }
 
   async function generateTailoredResume() {
-    setLoading("Building a complete tailored resume...");
+    setLoading("Building a strongly tailored, ATS-friendly resume...");
 
     try {
       const text = await protectedCall(`
-Create a COMPLETE tailored resume. Keep it truthful. Do not invent details.
-No markdown symbols. No explanation after the resume.
+You are an expert resume writer, recruiter, and ATS optimisation specialist.
 
-Resume:
+Your task is NOT to lightly edit the resume.
+Your task is to strategically rewrite and reposition the candidate for the target job so the resume is much closer to the job description and more likely to get shortlisted.
+
+IMPORTANT TRUTH RULES:
+- Do not invent fake companies.
+- Do not invent fake job titles.
+- Do not invent fake dates.
+- Do not invent fake degrees.
+- Do not invent fake certifications.
+- Do not invent fake tools, technologies, or skills.
+- Do not invent achievements that are not supported by the resume.
+- You may only use, rewrite, strengthen, reorder, and reposition information already present in the resume.
+
+WHAT YOU MUST DO:
+- Rewrite the professional summary strongly for the target role.
+- Reorder and prioritise skills based on the job description.
+- Rewrite experience bullets to match the target job responsibilities.
+- Add relevant ATS keywords from the job description naturally.
+- Strengthen existing experience using professional language.
+- Convert basic responsibilities into impact-focused bullet points.
+- Keep measurable achievements from the resume.
+- Keep education, certifications, qualifications, tools, languages, and work authorisation if present.
+- Remove or reduce less relevant information.
+- Make the resume feel clearly different from the original while staying truthful.
+- Make it polished, professional, ATS-friendly, and interview-focused.
+
+OUTPUT FORMAT:
+- Output only the final tailored resume.
+- No explanation.
+- No "key changes made".
+- No markdown symbols like # or **.
+- Use clean headings.
+- Use bullet points.
+- Keep formatting professional and readable.
+
+Candidate Resume:
 ${shortText(resume)}
 
-Target company:
+Target Company:
 ${company}
 
-Target role:
+Target Role:
 ${role}
 
-Job description:
+Job Description:
 ${shortText(jd)}
 `);
 
