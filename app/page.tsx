@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import mammoth from "mammoth";
 import { supabase } from "../lib/supabase";
 
-const APP_NAME = "SwiftApply";
+const APP_NAME = "ApplyIQ";
 const DAILY_LIMIT = 5;
 const MAX_INPUT = 50000;
 
@@ -56,7 +56,7 @@ function shortText(text: string) {
 
 function todayKey(email: string) {
   const today = new Date().toISOString().slice(0, 10);
-  return `swiftapply-usage-${email}-${today}`;
+  return `ApplyIQ-usage-${email}-${today}`;
 }
 
 function getUsage(email: string) {
@@ -171,7 +171,7 @@ function exportTrackerCSV(jobs: any[]) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "swiftapply-application-tracker.csv";
+  a.download = "ApplyIQ-application-tracker.csv";
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -378,7 +378,7 @@ export default function Page() {
   }, []);
 
   useEffect(() => {
-    const saved = localStorage.getItem("swiftapply-state");
+    const saved = localStorage.getItem("ApplyIQ-state");
 
     if (saved) {
       const s = JSON.parse(saved);
@@ -399,7 +399,7 @@ export default function Page() {
 
   useEffect(() => {
     localStorage.setItem(
-      "swiftapply-state",
+      "ApplyIQ-state",
       JSON.stringify({
         resume1,
         resume2,
@@ -724,7 +724,7 @@ ${role}
 
         <main className="loginPage">
           <div className="loginCard">
-            <h1>SwiftApply</h1>
+            <h1>ApplyIQ</h1>
             <p>AI-powered job application workspace</p>
 
             <div className="field">
