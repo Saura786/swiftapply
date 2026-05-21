@@ -491,7 +491,7 @@ export default function Page() {
   }
 
   async function generateTailoredResume() {
-    setLoading("Building a strongly tailored, ATS-friendly resume...");
+    setLoading("Building a compact, ATS-friendly tailored resume...");
 
     try {
       const text = await protectedCall(`
@@ -508,7 +508,19 @@ IMPORTANT TRUTH RULES:
 - Do not invent fake certifications.
 - Do not invent fake tools, technologies, or skills.
 - Do not invent achievements that are not supported by the resume.
-- You may only use, rewrite, strengthen, reorder, and reposition information already present in the resume.
+- You may only use, rewrite, strengthen, reorder, compress, and reposition information already present in the resume.
+
+LENGTH AND FORMAT RULES:
+- The final resume must be compact and job-portal ready.
+- Target length: 2 pages.
+- Absolute maximum: 3 pages only if the candidate has many years of relevant experience.
+- Do not create a long 5-6 page resume.
+- Do not over-expand every bullet.
+- Keep bullets concise, high-impact, and ATS-friendly.
+- Use a clean professional format that can be downloaded as Word/PDF and submitted directly.
+- Do not try to copy complex uploaded formatting exactly.
+- Use simple ATS-friendly formatting with clear headings.
+- Use clean headings, concise bullet points, and readable spacing.
 
 WHAT YOU MUST DO:
 - Rewrite the professional summary strongly for the target role.
@@ -519,7 +531,8 @@ WHAT YOU MUST DO:
 - Convert basic responsibilities into impact-focused bullet points.
 - Keep measurable achievements from the resume.
 - Keep education, certifications, qualifications, tools, languages, and work authorisation if present.
-- Remove or reduce less relevant information.
+- Compress older or less relevant roles into shorter sections.
+- Reduce or remove less relevant content when needed to stay within 2-3 pages.
 - Make the resume feel clearly different from the original while staying truthful.
 - Make it polished, professional, ATS-friendly, and interview-focused.
 
@@ -528,7 +541,17 @@ OUTPUT FORMAT:
 - No explanation.
 - No "key changes made".
 - No markdown symbols like # or **.
-- Use clean headings.
+- Use this structure where possible:
+  Candidate Name
+  Target Role / Professional Headline
+  Contact Details
+  Professional Summary
+  Core Skills
+  Professional Experience
+  Education
+  Certifications
+  Tools / Technical Skills
+  Additional Information if relevant
 - Use bullet points.
 - Keep formatting professional and readable.
 
