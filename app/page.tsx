@@ -425,6 +425,9 @@ export default function Page() {
   const [authPassword, setAuthPassword] = useState("");
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
   const [authLoading, setAuthLoading] = useState(false);
+  const [resetPasswordMode, setResetPasswordMode] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
 
   const [activeTab, setActiveTab] = useState("Dashboard");
   const [resume1, setResume1] = useState(SAMPLE_RESUME);
@@ -458,16 +461,40 @@ export default function Page() {
   const remaining = Math.max(DAILY_LIMIT - usage, 0);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+    if (typeof window !== "undefined") {
+      const currentUrl = window.location.href;
+
+      if (
+        currentUrl.includes("type=recovery") ||
+        currentUrl.includes("access_token=") ||
+        currentUrl.includes("code=")
+      ) {
+        setResetPasswordMode(true);
+      }
+    }
+
+    supabase.auth.getUser().then(({ data }) => {
+      if (!resetPasswordMode) {
+        setUser(data.user);
+      }
+    });
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY") {
+        setResetPasswordMode(true);
+        setUser(null);
+        return;
+      }
+
+      if (!resetPasswordMode) {
+        setUser(session?.user ?? null);
+      }
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [resetPasswordMode]);
 
   useEffect(() => {
     const saved = localStorage.getItem("applyiq-state");
@@ -546,6 +573,37 @@ export default function Page() {
     setAuthLoading(false);
 
     if (error) alert(error.message);
+  }
+
+  async function updatePassword() {
+    if (!newPassword || newPassword.length < 6) {
+      alert("Please enter a new password with at least 6 characters.");
+      return;
+    }
+
+    setResetPasswordLoading(true);
+
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
+
+    setResetPasswordLoading(false);
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    alert("Password updated successfully. Please login with your new password.");
+
+    setNewPassword("");
+    setResetPasswordMode(false);
+    setAuthMode("login");
+    await supabase.auth.signOut();
+
+    if (typeof window !== "undefined") {
+      window.history.replaceState({}, document.title, "/");
+    }
   }
 
   async function forgotPassword() {
@@ -895,6 +953,59 @@ ${role}
 
   function deleteJob(id: number) {
     setJobs(jobs.filter((j) => j.id !== id));
+  }
+
+  if (resetPasswordMode) {
+    return (
+      <>
+        <style>{styles}</style>
+
+        <main className="loginPage">
+          <div className="loginCard">
+            <h1>ApplyIQ</h1>
+            <p>Create a new password for your account.</p>
+
+            <div className="field">
+              <label>New Password</label>
+              <input
+                type="password"
+                value={newPassword}
+                placeholder="Minimum 6 characters"
+                autoComplete="new-password"
+                spellCheck={false}
+                autoCapitalize="none"
+                autoCorrect="off"
+                enterKeyHint="done"
+                onChange={(e) => setNewPassword(e.target.value)}
+              />
+            </div>
+
+            <button
+              className="mainLoginBtn"
+              onClick={updatePassword}
+              disabled={resetPasswordLoading}
+            >
+              {resetPasswordLoading ? "Updating..." : "Update Password"}
+            </button>
+
+            <button
+              className="switchBtn"
+              onClick={async () => {
+                setResetPasswordMode(false);
+                setNewPassword("");
+                await supabase.auth.signOut();
+
+                if (typeof window !== "undefined") {
+                  window.history.replaceState({}, document.title, "/");
+                }
+              }}
+            >
+              Back to Login
+            </button>
+          </div>
+        </main>
+      </>
+    );
   }
 
   if (!user) {
