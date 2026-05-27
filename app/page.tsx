@@ -118,13 +118,115 @@ function downloadText(filename: string, text: string) {
   URL.revokeObjectURL(url);
 }
 
+function escapeHtml(value: string) {
+  return String(value || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
+
+function formatResumeHtml(text: string) {
+  const safe = escapeHtml(text);
+  const lines = safe.split("\n");
+
+  return lines
+    .map((rawLine, index) => {
+      const line = rawLine.trim();
+
+      if (!line) return `<div class="space"></div>`;
+
+      const isFirstLine = index === 0;
+      const isHeading =
+        line.length <= 48 &&
+        /^[A-Z][A-Z\s/&()\-]+$/.test(line) &&
+        !line.startsWith("•") &&
+        !line.startsWith("-");
+
+      if (isFirstLine) return `<h1>${line}</h1>`;
+      if (isHeading) return `<h2>${line}</h2>`;
+
+      if (line.startsWith("•") || line.startsWith("-")) {
+        return `<div class="bullet">${line.replace(/^[-•]\s*/, "• ")}</div>`;
+      }
+
+      return `<p>${line}</p>`;
+    })
+    .join("");
+}
+
+function resumeDocumentHtml(title: string, text: string) {
+  return `
+    <html>
+      <head>
+        <meta charset="utf-8" />
+        <title>${escapeHtml(title)}</title>
+        <style>
+          @page {
+            size: A4;
+            margin: 0.42in;
+          }
+
+          body {
+            font-family: Arial, Helvetica, sans-serif;
+            color: #111827;
+            font-size: 10.2pt;
+            line-height: 1.22;
+            margin: 0;
+            padding: 0;
+          }
+
+          h1 {
+            font-size: 17pt;
+            text-align: center;
+            margin: 0 0 3px 0;
+            letter-spacing: 0.4px;
+            color: #111827;
+          }
+
+          h2 {
+            font-size: 10.8pt;
+            text-transform: uppercase;
+            border-bottom: 1px solid #111827;
+            margin: 8px 0 3px 0;
+            padding-bottom: 2px;
+            color: #111827;
+          }
+
+          p {
+            margin: 1.5px 0;
+          }
+
+          .bullet {
+            margin: 1.5px 0 1.5px 14px;
+            text-indent: -10px;
+          }
+
+          .space {
+            height: 3px;
+          }
+
+          @media print {
+            body {
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        ${formatResumeHtml(text)}
+      </body>
+    </html>
+  `;
+}
+
 function downloadWord(filename: string, text: string) {
-  const html = `<html><head><meta charset="utf-8"></head><body><pre style="font-family:Arial;white-space:pre-wrap;line-height:1.5;">${text}</pre></body></html>`;
-  const blob = new Blob([html], { type: "application/msword" });
+  const html = resumeDocumentHtml(filename, text);
+  const blob = new Blob([html], { type: "application/msword;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = filename;
+  a.download = filename.endsWith(".doc") ? filename : `${filename}.doc`;
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -133,23 +235,13 @@ function printPDF(title: string, text: string) {
   const win = window.open("", "_blank");
   if (!win) return;
 
-  win.document.write(`
-    <html>
-      <head>
-        <title>${title}</title>
-        <style>
-          body { font-family: Arial; padding: 40px; line-height: 1.6; }
-          pre { white-space: pre-wrap; font-family: Arial; }
-        </style>
-      </head>
-      <body>
-        <pre>${text}</pre>
-        <script>window.print()</script>
-      </body>
-    </html>
-  `);
-
+  win.document.write(resumeDocumentHtml(title, text));
   win.document.close();
+
+  setTimeout(() => {
+    win.focus();
+    win.print();
+  }, 500);
 }
 
 function exportTrackerCSV(jobs: any[]) {
