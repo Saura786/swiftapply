@@ -13,9 +13,21 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ApplyIQ",
+  title: "ApplyIQ – AI Resume Builder & ATS Optimizer",
   description:
-    "AI-powered resume tailoring, ATS optimization, cover letters, interview preparation, and job application tracking.",
+    "Tailor your resume to any job description, improve ATS scores, generate cover letters, prepare for interviews, and track applications with AI.",
+  keywords: [
+    "AI resume builder",
+    "resume tailoring",
+    "ATS resume",
+    "ATS score",
+    "cover letter generator",
+    "job application tracker",
+    "interview preparation",
+    "resume optimization",
+    "career tools",
+    "job search",
+  ],
 };
 
 export default function RootLayout({
@@ -28,7 +40,9 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {children}
+      </body>
     </html>
   );
 }
