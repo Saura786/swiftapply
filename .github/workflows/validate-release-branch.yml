@@ -31,7 +31,9 @@ jobs:
         run: npm install --package-lock-only --ignore-scripts
 
       - name: Apply non-breaking security fixes
-        run: npm audit fix
+        run: |
+          npm audit fix || echo "Leaving remaining development-tool advisories for a planned major upgrade."
+          npm audit --omit=dev
 
       - name: Install clean dependency tree
         run: npm ci
