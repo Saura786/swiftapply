@@ -3,10 +3,39 @@
 import { useEffect, useState } from "react";
 import mammoth from "mammoth";
 import { supabase } from "../lib/supabase";
+import type { User } from "@supabase/supabase-js";
 
 const APP_NAME = "ApplyIQ";
 const DAILY_LIMIT = 5;
 const MAX_INPUT = 50000;
+
+type JobEntry = {
+  id: number;
+  company: string;
+  role: string;
+  appliedDate: string;
+  followUpDate: string;
+  status: string;
+  notes: string;
+};
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error ?? "Unknown error");
+}
+
+function isJobEntry(value: unknown): value is JobEntry {
+  if (typeof value !== "object" || value === null) return false;
+  const job = value as Record<string, unknown>;
+  return (
+    typeof job.id === "number" &&
+    typeof job.company === "string" &&
+    typeof job.role === "string" &&
+    typeof job.appliedDate === "string" &&
+    typeof job.followUpDate === "string" &&
+    typeof job.status === "string" &&
+    typeof job.notes === "string"
+  );
+}
 
 const TABS = [
   "Dashboard",
@@ -54,18 +83,18 @@ function shortText(text: string) {
   return String(text || "").slice(0, MAX_INPUT);
 }
 
-function todayKey(email: string) {
+function todayKey(userId: string) {
   const today = new Date().toISOString().slice(0, 10);
-  return `applyiq-usage-${email}-${today}`;
+  return `applyiq-usage-${userId}-${today}`;
 }
 
-function getUsage(email: string) {
+function getUsage(userId: string) {
   if (typeof window === "undefined") return 0;
-  return Number(localStorage.getItem(todayKey(email)) || "0");
+  return Number(localStorage.getItem(todayKey(userId)) || "0");
 }
 
-function increaseUsage(email: string) {
-  localStorage.setItem(todayKey(email), String(getUsage(email) + 1));
+function increaseUsage(userId: string) {
+  localStorage.setItem(todayKey(userId), String(getUsage(userId) + 1));
 }
 
 async function extractTextFromFile(file: File) {
@@ -91,8 +120,14 @@ async function extractTextFromFile(file: File) {
     const formData = new FormData();
     formData.append("file", file);
 
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+      throw new Error("Your session has expired. Please log in again.");
+    }
+
     const res = await fetch("/api/extract-pdf", {
       method: "POST",
+      headers: { Authorization: `Bearer ${session.access_token}` },
       body: formData,
     });
 
@@ -244,7 +279,7 @@ function printPDF(title: string, text: string) {
   }, 500);
 }
 
-function exportTrackerCSV(jobs: any[]) {
+function exportTrackerCSV(jobs: JobEntry[]) {
   const headers = ["Company", "Role", "Date Applied", "Follow Up Date", "Status", "Notes"];
   const rows = jobs.map((job) => [
     job.company,
@@ -404,8 +439,8 @@ function ResumeUpload({
       const text = await extractTextFromFile(file);
       setResume(shortText(text));
       setStatus(`Uploaded: ${file.name}`);
-    } catch (err: any) {
-      setStatus("Error: " + err.message);
+    } catch (err: unknown) {
+      setStatus("Error: " + getErrorMessage(err));
     }
   }
 
@@ -420,7 +455,8 @@ function ResumeUpload({
 }
 
 export default function Page() {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [loadedUserId, setLoadedUserId] = useState<string | null>(null);
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
@@ -449,7 +485,7 @@ export default function Page() {
   const [followUp, setFollowUp] = useState("");
   const [loading, setLoading] = useState("");
 
-  const [jobs, setJobs] = useState<any[]>([]);
+  const [jobs, setJobs] = useState<JobEntry[]>([]);
   const [trackerCompany, setTrackerCompany] = useState("");
   const [trackerRole, setTrackerRole] = useState("");
   const [trackerAppliedDate, setTrackerAppliedDate] = useState(new Date().toISOString().slice(0, 10));
@@ -457,7 +493,7 @@ export default function Page() {
   const [trackerStatus, setTrackerStatus] = useState("Applied");
   const [trackerNotes, setTrackerNotes] = useState("");
 
-  const usage = user?.email ? getUsage(user.email) : 0;
+  const usage = user?.id ? getUsage(user.id) : 0;
   const remaining = Math.max(DAILY_LIMIT - usage, 0);
 
   useEffect(() => {
@@ -469,6 +505,8 @@ export default function Page() {
         currentUrl.includes("access_token=") ||
         currentUrl.includes("code=")
       ) {
+        // The recovery flag is derived from the browser URL during client hydration.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setResetPasswordMode(true);
       }
     }
@@ -496,29 +534,61 @@ export default function Page() {
     return () => subscription.unsubscribe();
   }, [resetPasswordMode]);
 
+  // Workspace data is isolated by authenticated Supabase user ID. Never load the
+  // legacy global key ("applyiq-state"), which could show one account's resume
+  // and application history to another account using the same browser.
   useEffect(() => {
-    const saved = localStorage.getItem("applyiq-state");
+    const userId = user?.id as string | undefined;
+    // Hydrate account-scoped localStorage and clear previous account data.
+    // This external-store hydration is intentionally performed after the auth
+    // identity changes, before enabling persistence for the newly loaded user.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setResume1(SAMPLE_RESUME);
+    setResume2("");
+    setActiveResume("resume1");
+    setJd(SAMPLE_JD);
+    setCompany("");
+    setRole("");
+    setTailoredResume("");
+    setAtsScore("");
+    setCoverLetter("");
+    setAnalysis("");
+    setInterviewPrep("");
+    setFollowUp("");
+    setJobs([]);
 
-    if (saved) {
-      const s = JSON.parse(saved);
-      setResume1(s.resume1 || SAMPLE_RESUME);
-      setResume2(s.resume2 || "");
-      setJd(s.jd || SAMPLE_JD);
-      setCompany(s.company || "");
-      setRole(s.role || "");
-      setTailoredResume(s.tailoredResume || "");
-      setAtsScore(s.atsScore || "");
-      setCoverLetter(s.coverLetter || "");
-      setAnalysis(s.analysis || "");
-      setInterviewPrep(s.interviewPrep || "");
-      setFollowUp(s.followUp || "");
-      setJobs(s.jobs || []);
+    if (!userId || typeof window === "undefined") return;
+
+    try {
+      const saved = localStorage.getItem(`applyiq-state-${userId}`);
+      if (saved) {
+        const s = JSON.parse(saved);
+        setResume1(typeof s.resume1 === "string" ? s.resume1 : SAMPLE_RESUME);
+        setResume2(typeof s.resume2 === "string" ? s.resume2 : "");
+        setJd(typeof s.jd === "string" ? s.jd : SAMPLE_JD);
+        setCompany(typeof s.company === "string" ? s.company : "");
+        setRole(typeof s.role === "string" ? s.role : "");
+        setTailoredResume(typeof s.tailoredResume === "string" ? s.tailoredResume : "");
+        setAtsScore(typeof s.atsScore === "string" ? s.atsScore : "");
+        setCoverLetter(typeof s.coverLetter === "string" ? s.coverLetter : "");
+        setAnalysis(typeof s.analysis === "string" ? s.analysis : "");
+        setInterviewPrep(typeof s.interviewPrep === "string" ? s.interviewPrep : "");
+        setFollowUp(typeof s.followUp === "string" ? s.followUp : "");
+        setJobs(Array.isArray(s.jobs) ? s.jobs.filter(isJobEntry) : []);
+      }
+    } catch (error) {
+      console.error("Could not restore this account's saved workspace:", error);
     }
-  }, []);
+
+    setLoadedUserId(userId);
+  }, [user?.id]);
 
   useEffect(() => {
+    const userId = user?.id as string | undefined;
+    if (!userId || loadedUserId !== userId || typeof window === "undefined") return;
+
     localStorage.setItem(
-      "applyiq-state",
+      `applyiq-state-${userId}`,
       JSON.stringify({
         resume1,
         resume2,
@@ -534,7 +604,7 @@ export default function Page() {
         jobs,
       })
     );
-  }, [resume1, resume2, jd, company, role, tailoredResume, atsScore, coverLetter, analysis, interviewPrep, followUp, jobs]);
+  }, [user?.id, loadedUserId, resume1, resume2, jd, company, role, tailoredResume, atsScore, coverLetter, analysis, interviewPrep, followUp, jobs]);
 
   async function loginOrSignup() {
     if (!authEmail || !authPassword) {
@@ -637,17 +707,24 @@ export default function Page() {
   async function protectedCall(prompt: string) {
     if (!user?.email) throw new Error("Please login first.");
 
-    if (getUsage(user.email) >= DAILY_LIMIT) {
-      throw new Error(`Daily test limit reached. You can generate ${DAILY_LIMIT} items per day during beta testing.`);
-    }
+    // The server/database enforce the authoritative daily quota.
+    // This browser-side counter is display-only and must never block a request.
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 55000);
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error("Your session has expired. Please log in again.");
+      }
+
       const res = await fetch("/api/generate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify({ prompt: shortText(prompt) }),
         signal: controller.signal,
       });
@@ -658,12 +735,12 @@ export default function Page() {
 
       if (!res.ok) throw new Error(data.error || "API failed");
 
-      increaseUsage(user.email);
+      increaseUsage(user.id);
       return String(data.text || "").replaceAll("#", "").trim();
-    } catch (err: any) {
+    } catch (err: unknown) {
       clearTimeout(timeout);
 
-      if (err.name === "AbortError") {
+      if (err instanceof Error && err.name === "AbortError") {
         throw new Error("Request took too long. Try a shorter resume or job description.");
       }
 
@@ -750,8 +827,8 @@ ${shortText(jd)}
 `);
 
       setTailoredResume(text);
-    } catch (err: any) {
-      setTailoredResume("Error: " + err.message);
+    } catch (err: unknown) {
+      setTailoredResume("Error: " + getErrorMessage(err));
     } finally {
       setLoading("");
     }
@@ -780,8 +857,8 @@ ${shortText(jd)}
 `);
 
       setAtsScore(text);
-    } catch (err: any) {
-      setAtsScore("Error: " + err.message);
+    } catch (err: unknown) {
+      setAtsScore("Error: " + getErrorMessage(err));
     } finally {
       setLoading("");
     }
@@ -809,8 +886,8 @@ ${shortText(jd)}
 `);
 
       setCoverLetter(text);
-    } catch (err: any) {
-      setCoverLetter("Error: " + err.message);
+    } catch (err: unknown) {
+      setCoverLetter("Error: " + getErrorMessage(err));
     } finally {
       setLoading("");
     }
@@ -839,8 +916,8 @@ ${shortText(jd)}
 `);
 
       setAnalysis(text);
-    } catch (err: any) {
-      setAnalysis("Error: " + err.message);
+    } catch (err: unknown) {
+      setAnalysis("Error: " + getErrorMessage(err));
     } finally {
       setLoading("");
     }
@@ -869,8 +946,8 @@ ${shortText(jd)}
 `);
 
       setInterviewPrep(text);
-    } catch (err: any) {
-      setInterviewPrep("Error: " + err.message);
+    } catch (err: unknown) {
+      setInterviewPrep("Error: " + getErrorMessage(err));
     } finally {
       setLoading("");
     }
@@ -891,8 +968,8 @@ ${role}
 `);
 
       setFollowUp(text);
-    } catch (err: any) {
-      setFollowUp("Error: " + err.message);
+    } catch (err: unknown) {
+      setFollowUp("Error: " + getErrorMessage(err));
     } finally {
       setLoading("");
     }
