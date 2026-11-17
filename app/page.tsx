@@ -505,6 +505,8 @@ export default function Page() {
         currentUrl.includes("access_token=") ||
         currentUrl.includes("code=")
       ) {
+        // The recovery flag is derived from the browser URL during client hydration.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setResetPasswordMode(true);
       }
     }
@@ -519,8 +521,6 @@ export default function Page() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "PASSWORD_RECOVERY") {
-        // The recovery URL is read after hydration; this state update is intentional.
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setResetPasswordMode(true);
         setUser(null);
         return;
@@ -539,8 +539,10 @@ export default function Page() {
   // and application history to another account using the same browser.
   useEffect(() => {
     const userId = user?.id as string | undefined;
-    // Clear in-memory workspace data whenever there is no signed-in user or
-    // the active account changes. A signed-in account then loads only its key.
+    // Hydrate account-scoped localStorage and clear previous account data.
+    // This external-store hydration is intentionally performed after the auth
+    // identity changes, before enabling persistence for the newly loaded user.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setResume1(SAMPLE_RESUME);
     setResume2("");
     setActiveResume("resume1");
