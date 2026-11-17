@@ -1,5 +1,5 @@
 import PDFParser from "pdf2json";
-import { getAuthenticatedSupabase } from "../../../../lib/supabase-auth";
+import { getAuthenticatedSupabase } from "../../../lib/supabase-auth";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
