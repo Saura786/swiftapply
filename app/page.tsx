@@ -542,7 +542,6 @@ export default function Page() {
   useEffect(() => {
     const userId = user?.id as string | undefined;
     // This effect hydrates external localStorage state after the auth identity changes.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoadedUserId(null);
 
     // Clear in-memory workspace data whenever there is no signed-in user or
