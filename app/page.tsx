@@ -3,10 +3,39 @@
 import { useEffect, useState } from "react";
 import mammoth from "mammoth";
 import { supabase } from "../lib/supabase";
+import type { User } from "@supabase/supabase-js";
 
 const APP_NAME = "ApplyIQ";
 const DAILY_LIMIT = 5;
 const MAX_INPUT = 50000;
+
+type JobEntry = {
+  id: number;
+  company: string;
+  role: string;
+  appliedDate: string;
+  followUpDate: string;
+  status: string;
+  notes: string;
+};
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error ?? "Unknown error");
+}
+
+function isJobEntry(value: unknown): value is JobEntry {
+  if (typeof value !== "object" || value === null) return false;
+  const job = value as Record<string, unknown>;
+  return (
+    typeof job.id === "number" &&
+    typeof job.company === "string" &&
+    typeof job.role === "string" &&
+    typeof job.appliedDate === "string" &&
+    typeof job.followUpDate === "string" &&
+    typeof job.status === "string" &&
+    typeof job.notes === "string"
+  );
+}
 
 const TABS = [
   "Dashboard",
@@ -250,7 +279,7 @@ function printPDF(title: string, text: string) {
   }, 500);
 }
 
-function exportTrackerCSV(jobs: any[]) {
+function exportTrackerCSV(jobs: JobEntry[]) {
   const headers = ["Company", "Role", "Date Applied", "Follow Up Date", "Status", "Notes"];
   const rows = jobs.map((job) => [
     job.company,
@@ -410,8 +439,8 @@ function ResumeUpload({
       const text = await extractTextFromFile(file);
       setResume(shortText(text));
       setStatus(`Uploaded: ${file.name}`);
-    } catch (err: any) {
-      setStatus("Error: " + err.message);
+    } catch (err: unknown) {
+      setStatus("Error: " + getErrorMessage(err));
     }
   }
 
@@ -426,7 +455,7 @@ function ResumeUpload({
 }
 
 export default function Page() {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loadedUserId, setLoadedUserId] = useState<string | null>(null);
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
@@ -456,7 +485,7 @@ export default function Page() {
   const [followUp, setFollowUp] = useState("");
   const [loading, setLoading] = useState("");
 
-  const [jobs, setJobs] = useState<any[]>([]);
+  const [jobs, setJobs] = useState<JobEntry[]>([]);
   const [trackerCompany, setTrackerCompany] = useState("");
   const [trackerRole, setTrackerRole] = useState("");
   const [trackerAppliedDate, setTrackerAppliedDate] = useState(new Date().toISOString().slice(0, 10));
@@ -476,6 +505,8 @@ export default function Page() {
         currentUrl.includes("access_token=") ||
         currentUrl.includes("code=")
       ) {
+        // The recovery URL is read after hydration; this state update is intentional.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setResetPasswordMode(true);
       }
     }
@@ -490,6 +521,8 @@ export default function Page() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "PASSWORD_RECOVERY") {
+        // The recovery URL is read after hydration; this state update is intentional.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setResetPasswordMode(true);
         setUser(null);
         return;
@@ -508,6 +541,8 @@ export default function Page() {
   // and application history to another account using the same browser.
   useEffect(() => {
     const userId = user?.id as string | undefined;
+    // This effect hydrates external localStorage state after the auth identity changes.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoadedUserId(null);
 
     // Clear in-memory workspace data whenever there is no signed-in user or
@@ -543,7 +578,7 @@ export default function Page() {
         setAnalysis(typeof s.analysis === "string" ? s.analysis : "");
         setInterviewPrep(typeof s.interviewPrep === "string" ? s.interviewPrep : "");
         setFollowUp(typeof s.followUp === "string" ? s.followUp : "");
-        setJobs(Array.isArray(s.jobs) ? s.jobs : []);
+        setJobs(Array.isArray(s.jobs) ? s.jobs.filter(isJobEntry) : []);
       }
     } catch (error) {
       console.error("Could not restore this account's saved workspace:", error);
@@ -706,10 +741,10 @@ export default function Page() {
 
       increaseUsage(user.id);
       return String(data.text || "").replaceAll("#", "").trim();
-    } catch (err: any) {
+    } catch (err: unknown) {
       clearTimeout(timeout);
 
-      if (err.name === "AbortError") {
+      if (err instanceof Error && err.name === "AbortError") {
         throw new Error("Request took too long. Try a shorter resume or job description.");
       }
 
@@ -796,8 +831,8 @@ ${shortText(jd)}
 `);
 
       setTailoredResume(text);
-    } catch (err: any) {
-      setTailoredResume("Error: " + err.message);
+    } catch (err: unknown) {
+      setTailoredResume("Error: " + getErrorMessage(err));
     } finally {
       setLoading("");
     }
@@ -826,8 +861,8 @@ ${shortText(jd)}
 `);
 
       setAtsScore(text);
-    } catch (err: any) {
-      setAtsScore("Error: " + err.message);
+    } catch (err: unknown) {
+      setAtsScore("Error: " + getErrorMessage(err));
     } finally {
       setLoading("");
     }
@@ -855,8 +890,8 @@ ${shortText(jd)}
 `);
 
       setCoverLetter(text);
-    } catch (err: any) {
-      setCoverLetter("Error: " + err.message);
+    } catch (err: unknown) {
+      setCoverLetter("Error: " + getErrorMessage(err));
     } finally {
       setLoading("");
     }
@@ -885,8 +920,8 @@ ${shortText(jd)}
 `);
 
       setAnalysis(text);
-    } catch (err: any) {
-      setAnalysis("Error: " + err.message);
+    } catch (err: unknown) {
+      setAnalysis("Error: " + getErrorMessage(err));
     } finally {
       setLoading("");
     }
@@ -915,8 +950,8 @@ ${shortText(jd)}
 `);
 
       setInterviewPrep(text);
-    } catch (err: any) {
-      setInterviewPrep("Error: " + err.message);
+    } catch (err: unknown) {
+      setInterviewPrep("Error: " + getErrorMessage(err));
     } finally {
       setLoading("");
     }
@@ -937,8 +972,8 @@ ${role}
 `);
 
       setFollowUp(text);
-    } catch (err: any) {
-      setFollowUp("Error: " + err.message);
+    } catch (err: unknown) {
+      setFollowUp("Error: " + getErrorMessage(err));
     } finally {
       setLoading("");
     }
