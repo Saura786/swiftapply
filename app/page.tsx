@@ -54,18 +54,18 @@ function shortText(text: string) {
   return String(text || "").slice(0, MAX_INPUT);
 }
 
-function todayKey(email: string) {
+function todayKey(userId: string) {
   const today = new Date().toISOString().slice(0, 10);
-  return `applyiq-usage-${email}-${today}`;
+  return `applyiq-usage-${userId}-${today}`;
 }
 
-function getUsage(email: string) {
+function getUsage(userId: string) {
   if (typeof window === "undefined") return 0;
-  return Number(localStorage.getItem(todayKey(email)) || "0");
+  return Number(localStorage.getItem(todayKey(userId)) || "0");
 }
 
-function increaseUsage(email: string) {
-  localStorage.setItem(todayKey(email), String(getUsage(email) + 1));
+function increaseUsage(userId: string) {
+  localStorage.setItem(todayKey(userId), String(getUsage(userId) + 1));
 }
 
 async function extractTextFromFile(file: File) {
@@ -427,6 +427,7 @@ function ResumeUpload({
 
 export default function Page() {
   const [user, setUser] = useState<any>(null);
+  const [loadedUserId, setLoadedUserId] = useState<string | null>(null);
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
@@ -463,7 +464,7 @@ export default function Page() {
   const [trackerStatus, setTrackerStatus] = useState("Applied");
   const [trackerNotes, setTrackerNotes] = useState("");
 
-  const usage = user?.email ? getUsage(user.email) : 0;
+  const usage = user?.id ? getUsage(user.id) : 0;
   const remaining = Math.max(DAILY_LIMIT - usage, 0);
 
   useEffect(() => {
@@ -502,29 +503,61 @@ export default function Page() {
     return () => subscription.unsubscribe();
   }, [resetPasswordMode]);
 
+  // Workspace data is isolated by authenticated Supabase user ID. Never load the
+  // legacy global key ("applyiq-state"), which could show one account's resume
+  // and application history to another account using the same browser.
   useEffect(() => {
-    const saved = localStorage.getItem("applyiq-state");
+    const userId = user?.id as string | undefined;
+    setLoadedUserId(null);
 
-    if (saved) {
-      const s = JSON.parse(saved);
-      setResume1(s.resume1 || SAMPLE_RESUME);
-      setResume2(s.resume2 || "");
-      setJd(s.jd || SAMPLE_JD);
-      setCompany(s.company || "");
-      setRole(s.role || "");
-      setTailoredResume(s.tailoredResume || "");
-      setAtsScore(s.atsScore || "");
-      setCoverLetter(s.coverLetter || "");
-      setAnalysis(s.analysis || "");
-      setInterviewPrep(s.interviewPrep || "");
-      setFollowUp(s.followUp || "");
-      setJobs(s.jobs || []);
+    // Clear in-memory workspace data whenever there is no signed-in user or
+    // the active account changes. A signed-in account then loads only its key.
+    setResume1(SAMPLE_RESUME);
+    setResume2("");
+    setActiveResume("resume1");
+    setJd(SAMPLE_JD);
+    setCompany("");
+    setRole("");
+    setTailoredResume("");
+    setAtsScore("");
+    setCoverLetter("");
+    setAnalysis("");
+    setInterviewPrep("");
+    setFollowUp("");
+    setJobs([]);
+
+    if (!userId || typeof window === "undefined") return;
+
+    try {
+      const saved = localStorage.getItem(`applyiq-state-${userId}`);
+      if (saved) {
+        const s = JSON.parse(saved);
+        setResume1(typeof s.resume1 === "string" ? s.resume1 : SAMPLE_RESUME);
+        setResume2(typeof s.resume2 === "string" ? s.resume2 : "");
+        setJd(typeof s.jd === "string" ? s.jd : SAMPLE_JD);
+        setCompany(typeof s.company === "string" ? s.company : "");
+        setRole(typeof s.role === "string" ? s.role : "");
+        setTailoredResume(typeof s.tailoredResume === "string" ? s.tailoredResume : "");
+        setAtsScore(typeof s.atsScore === "string" ? s.atsScore : "");
+        setCoverLetter(typeof s.coverLetter === "string" ? s.coverLetter : "");
+        setAnalysis(typeof s.analysis === "string" ? s.analysis : "");
+        setInterviewPrep(typeof s.interviewPrep === "string" ? s.interviewPrep : "");
+        setFollowUp(typeof s.followUp === "string" ? s.followUp : "");
+        setJobs(Array.isArray(s.jobs) ? s.jobs : []);
+      }
+    } catch (error) {
+      console.error("Could not restore this account's saved workspace:", error);
     }
-  }, []);
+
+    setLoadedUserId(userId);
+  }, [user?.id]);
 
   useEffect(() => {
+    const userId = user?.id as string | undefined;
+    if (!userId || loadedUserId !== userId || typeof window === "undefined") return;
+
     localStorage.setItem(
-      "applyiq-state",
+      `applyiq-state-${userId}`,
       JSON.stringify({
         resume1,
         resume2,
@@ -540,7 +573,7 @@ export default function Page() {
         jobs,
       })
     );
-  }, [resume1, resume2, jd, company, role, tailoredResume, atsScore, coverLetter, analysis, interviewPrep, followUp, jobs]);
+  }, [user?.id, loadedUserId, resume1, resume2, jd, company, role, tailoredResume, atsScore, coverLetter, analysis, interviewPrep, followUp, jobs]);
 
   async function loginOrSignup() {
     if (!authEmail || !authPassword) {
@@ -671,7 +704,7 @@ export default function Page() {
 
       if (!res.ok) throw new Error(data.error || "API failed");
 
-      increaseUsage(user.email);
+      increaseUsage(user.id);
       return String(data.text || "").replaceAll("#", "").trim();
     } catch (err: any) {
       clearTimeout(timeout);
