@@ -1,0 +1,58 @@
+name: Validate and sync release branch
+
+on:
+  push:
+    branches:
+      - security/production-auth-hardening
+
+permissions:
+  contents: write
+
+concurrency:
+  group: applyiq-release-branch
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout release branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: true
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Regenerate npm lockfile
+        run: npm install --package-lock-only --ignore-scripts
+
+      - name: Install clean dependency tree
+        run: npm ci
+
+      - name: Lint changed application files
+        run: npx eslint app/page.tsx app/api/extract-pdf/route.ts app/api/generate/route.ts lib/supabase-auth.ts lib/supabase.ts
+
+      - name: Build production application
+        run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://vjmhkzgdfhqmphxlzdjm.supabase.co
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_z1dSb1lbXwgNy0W8w220xg_pqhE4krY
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev
+
+      - name: Commit updated lockfile
+        run: |
+          if ! git diff --quiet -- package-lock.json; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add package-lock.json
+            git commit -m "Sync npm lockfile for Next.js 16.4.6"
+            git push
+          else
+            echo "Lockfile is already in sync."
+          fi
