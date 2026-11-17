@@ -643,9 +643,8 @@ export default function Page() {
   async function protectedCall(prompt: string) {
     if (!user?.email) throw new Error("Please login first.");
 
-    if (getUsage(user.email) >= DAILY_LIMIT) {
-      throw new Error(`Daily test limit reached. You can generate ${DAILY_LIMIT} items per day during beta testing.`);
-    }
+    // The server/database enforce the authoritative daily quota.
+    // This browser-side counter is display-only and must never block a request.
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 55000);
