@@ -505,8 +505,6 @@ export default function Page() {
         currentUrl.includes("access_token=") ||
         currentUrl.includes("code=")
       ) {
-        // The recovery URL is read after hydration; this state update is intentional.
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setResetPasswordMode(true);
       }
     }
@@ -541,9 +539,6 @@ export default function Page() {
   // and application history to another account using the same browser.
   useEffect(() => {
     const userId = user?.id as string | undefined;
-    // This effect hydrates external localStorage state after the auth identity changes.
-    setLoadedUserId(null);
-
     // Clear in-memory workspace data whenever there is no signed-in user or
     // the active account changes. A signed-in account then loads only its key.
     setResume1(SAMPLE_RESUME);
