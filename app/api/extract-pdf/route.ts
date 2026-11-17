@@ -1,4 +1,5 @@
 import PDFParser from "pdf2json";
+import { getAuthenticatedSupabase } from "../../../../lib/supabase-auth";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -110,6 +111,10 @@ function extractTextFromPdfData(pdfData: any) {
 
 export async function POST(req: Request) {
   try {
+    const auth = await getAuthenticatedSupabase(req);
+    if (!auth) {
+      return Response.json({ error: "Authentication required" }, { status: 401 });
+    }
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
 
