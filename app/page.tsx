@@ -91,8 +91,14 @@ async function extractTextFromFile(file: File) {
     const formData = new FormData();
     formData.append("file", file);
 
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+      throw new Error("Your session has expired. Please log in again.");
+    }
+
     const res = await fetch("/api/extract-pdf", {
       method: "POST",
+      headers: { Authorization: `Bearer ${session.access_token}` },
       body: formData,
     });
 
@@ -645,9 +651,17 @@ export default function Page() {
     const timeout = setTimeout(() => controller.abort(), 55000);
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error("Your session has expired. Please log in again.");
+      }
+
       const res = await fetch("/api/generate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify({ prompt: shortText(prompt) }),
         signal: controller.signal,
       });
