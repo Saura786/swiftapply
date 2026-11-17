@@ -30,6 +30,9 @@ jobs:
       - name: Regenerate npm lockfile
         run: npm install --package-lock-only --ignore-scripts
 
+      - name: Apply non-breaking security fixes
+        run: npm audit fix
+
       - name: Install clean dependency tree
         run: npm ci
 
