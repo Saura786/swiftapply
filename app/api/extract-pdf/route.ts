@@ -49,25 +49,46 @@ function cleanText(text: string) {
     .trim();
 }
 
-function extractTextFromPdfData(pdfData: any) {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function parserErrorMessage(errorData: unknown) {
+  if (errorData instanceof Error) return errorData.message;
+  if (isRecord(errorData)) {
+    const parserError = errorData.parserError;
+    if (parserError instanceof Error) return parserError.message;
+    if (typeof parserError === "string") return parserError;
+  }
+  return "Could not read PDF";
+}
+
+function extractTextFromPdfData(pdfData: unknown) {
   let finalText = "";
+  const root = isRecord(pdfData) ? pdfData : {};
+  const pages = Array.isArray(root.Pages) ? root.Pages : [];
 
-  for (const page of pdfData?.Pages || []) {
-    const items: any[] = [];
+  for (const pageValue of pages) {
+    const page = isRecord(pageValue) ? pageValue : {};
+    const textItems = Array.isArray(page.Texts) ? page.Texts : [];
+    const items: { x: number; y: number; w: number; text: string }[] = [];
 
-    for (const item of page.Texts || []) {
-      const text = (item.R || [])
-        .map((run: any) => decodePdfText(run.T || ""))
+    for (const itemValue of textItems) {
+      const item = isRecord(itemValue) ? itemValue : {};
+      const runs = Array.isArray(item.R) ? item.R : [];
+      const text = runs
+        .map((runValue) => {
+          const run = isRecord(runValue) ? runValue : {};
+          return decodePdfText(typeof run.T === "string" ? run.T : "");
+        })
         .join("");
 
       if (!text.trim()) continue;
 
-      items.push({
-        x: Number(item.x || 0),
-        y: Number(item.y || 0),
-        w: Number(item.w || 0),
-        text,
-      });
+      const x = typeof item.x === "number" || typeof item.x === "string" ? Number(item.x) : 0;
+      const y = typeof item.y === "number" || typeof item.y === "string" ? Number(item.y) : 0;
+      const w = typeof item.w === "number" || typeof item.w === "string" ? Number(item.w) : 0;
+      items.push({ x, y, w, text });
     }
 
     items.sort((a, b) => {
@@ -143,11 +164,11 @@ export async function POST(req: Request) {
     const extractedText = await new Promise<string>((resolve, reject) => {
       const pdfParser = new PDFParser();
 
-      pdfParser.on("pdfParser_dataError", (errData: any) => {
-        reject(new Error(errData?.parserError || "Could not read PDF"));
+      pdfParser.on("pdfParser_dataError", (errData: unknown) => {
+        reject(new Error(parserErrorMessage(errData)));
       });
 
-      pdfParser.on("pdfParser_dataReady", (pdfData: any) => {
+      pdfParser.on("pdfParser_dataReady", (pdfData: unknown) => {
         resolve(extractTextFromPdfData(pdfData));
       });
 
@@ -167,9 +188,9 @@ export async function POST(req: Request) {
     return Response.json({
       text: extractedText.slice(0, MAX_TEXT_LENGTH),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     return Response.json(
-      { error: error?.message || "PDF upload failed" },
+      { error: error instanceof Error ? error.message : "PDF upload failed" },
       { status: 500 }
     );
   }
