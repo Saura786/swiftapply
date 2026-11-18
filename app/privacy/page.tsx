@@ -22,11 +22,11 @@ export default function PrivacyPage() {
         <p>When you create an account, ApplyIQ processes your email address and authentication information through Supabase. When you use the workspace, you may enter resume text, job descriptions, company and role details, application statuses, notes, and AI-generated drafts.</p>
 
         <h2>2. Where workspace drafts are stored</h2>
-        <p>The current app saves resume text, job descriptions, generated drafts and application-tracker entries in your browser's local storage, under a key associated with your signed-in Supabase user ID. These workspace drafts are not currently synchronised between devices. Anyone with access to your unlocked browser profile may be able to access local browser data, so use a private device and sign out when appropriate.</p>
+        <p>The current app saves resume text, job descriptions, generated drafts and application-tracker entries in your browser&apos;s local storage, under a key associated with your signed-in Supabase user ID. These workspace drafts are not currently synchronised between devices. Anyone with access to your unlocked browser profile may be able to access local browser data, so use a private device and sign out when appropriate.</p>
         <p>Supabase is used for account authentication and the server-enforced daily AI-generation quota. The application code does not intentionally save your resume or job-description text in the ApplyIQ Supabase database.</p>
 
         <h2>3. When content is sent for AI processing</h2>
-        <p>When you request an AI feature, the relevant text you submit (which may include resume content and a job description) is sent from the ApplyIQ server to Anthropic's Claude AI service to generate a response. Do not submit information you are not comfortable sending to an AI service. Review Anthropic's own privacy and service terms to understand its handling of API inputs and outputs.</p>
+        <p>When you request an AI feature, the relevant text you submit (which may include resume content and a job description) is sent from the ApplyIQ server to Anthropic&apos;s Claude AI service to generate a response. Do not submit information you are not comfortable sending to an AI service. Review Anthropic&apos;s own privacy and service terms to understand its handling of API inputs and outputs.</p>
         <p>DOCX and TXT files are read in your browser. Text-based PDF files are uploaded to the ApplyIQ server for text extraction; the server returns the extracted text to your browser. The app code does not intentionally store the uploaded PDF file as an application record.</p>
 
         <h2>4. Service providers</h2>
@@ -39,10 +39,10 @@ export default function PrivacyPage() {
         <p>These providers process information under their own terms and privacy notices. ApplyIQ does not control their independent systems or retention practices.</p>
 
         <h2>5. Your choices</h2>
-        <p>You can avoid using AI features, choose what content to submit, edit generated drafts before using them, and remove local workspace drafts by clearing the site's browser storage. Clearing browser storage also removes the locally saved workspace and may sign you out. Logging out alone does not delete locally saved drafts. Account authentication and quota records are held by Supabase; this version of the site does not yet provide a self-service account-deletion control.</p>
+        <p>You can avoid using AI features, choose what content to submit, edit generated drafts before using them, and remove local workspace drafts by clearing the site&apos;s browser storage. Clearing browser storage also removes the locally saved workspace and may sign you out. Logging out alone does not delete locally saved drafts. Account authentication and quota records are held by Supabase; this version of the site does not yet provide a self-service account-deletion control.</p>
 
         <h2>6. Security and retention</h2>
-        <p>ApplyIQ uses authenticated server routes for AI generation and PDF text extraction. No internet service can guarantee perfect security. Protect your account credentials, keep your device secure, and avoid submitting unnecessary sensitive information. Browser-stored drafts remain until you remove them or the browser clears that data. Provider records are subject to the relevant provider's policies.</p>
+        <p>ApplyIQ uses authenticated server routes for AI generation and PDF text extraction. No internet service can guarantee perfect security. Protect your account credentials, keep your device secure, and avoid submitting unnecessary sensitive information. Browser-stored drafts remain until you remove them or the browser clears that data. Provider records are subject to the relevant provider&apos;s policies.</p>
 
         <h2>7. Changes and contact</h2>
         <p>This notice should be reviewed and updated as the service, providers or applicable legal requirements change. For privacy or account requests, contact the ApplyIQ site operator through the support channel provided to you by the service owner.</p>
