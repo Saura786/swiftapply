@@ -513,7 +513,6 @@ export default function Page() {
         currentUrl.includes("code=")
       ) {
         // The recovery flag is derived from the browser URL during client hydration.
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setResetPasswordMode(true);
       }
     }
