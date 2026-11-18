@@ -13,21 +13,44 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ApplyIQ – AI Resume Builder & ATS Optimizer",
+  metadataBase: new URL("https://applyiq.dev"),
+  title: {
+    default: "ApplyIQ – Make Every Job Application Count",
+    template: "%s | ApplyIQ",
+  },
   description:
-    "Tailor your resume to any job description, improve ATS scores, generate cover letters, prepare for interviews, and track applications with AI.",
+    "Tailor your resume to job descriptions, review ATS fit, prepare cover letters and interviews, and organise your job search in one private workspace.",
   keywords: [
     "AI resume builder",
     "resume tailoring",
-    "ATS resume",
-    "ATS score",
-    "cover letter generator",
+    "ATS resume checker",
+    "resume job description match",
+    "AI cover letter generator",
     "job application tracker",
     "interview preparation",
-    "resume optimization",
     "career tools",
-    "job search",
   ],
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    url: "https://applyiq.dev/",
+    siteName: "ApplyIQ",
+    title: "ApplyIQ – Make Every Job Application Count",
+    description:
+      "A focused workspace to tailor your resume, prepare application documents and organise your job search.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "ApplyIQ – Make Every Job Application Count",
+    description:
+      "Tailor your resume, prepare application documents and keep your job search organised with ApplyIQ.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({
