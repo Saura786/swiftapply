@@ -625,6 +625,9 @@ export default function Page() {
       const { error } = await supabase.auth.signUp({
         email: authEmail.trim(),
         password: authPassword,
+        options: {
+          emailRedirectTo: "https://applyiq.dev/workspace",
+        },
       });
 
       setAuthLoading(false);
