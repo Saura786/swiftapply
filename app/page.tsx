@@ -87,7 +87,7 @@ export default function Home() {
 
       <section className="marketing-final"><div className="marketing-container"><div className="marketing-eyebrow">YOUR NEXT STEP STARTS HERE</div><h2>Give your next application<br/>a little more intention.</h2><p>Bring your experience. Bring the role. We’ll help you organise the rest.</p><div><Link href="/workspace?mode=signup" className="marketing-button">Try ApplyIQ free <Arrow/></Link><Link href="/workspace">Already have an account? Log in</Link></div></div></section>
 
-      <footer className="marketing-footer"><div className="marketing-container"><Brand/><p>Make every application count.</p><div><a href="#features">Features</a><a href="#faq">FAQ</a><Link href="/workspace">Log in</Link></div><small>© {new Date().getFullYear()} ApplyIQ. AI suggestions are drafts; always review your application before sending.</small></div></footer>
+      <footer className="marketing-footer"><div className="marketing-container"><Brand/><p>Make every application count.</p><div><a href="#features">Features</a><a href="#faq">FAQ</a><Link href="/privacy">Privacy</Link><Link href="/workspace">Log in</Link></div><small>© {new Date().getFullYear()} ApplyIQ. AI suggestions are drafts; always review your application before sending.</small></div></footer>
     </main>
   );
 }
