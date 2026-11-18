@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import mammoth from "mammoth";
 import { supabase } from "../../lib/supabase";
@@ -1047,7 +1048,7 @@ ${role}
           <div className="loginCard">
             <h1>ApplyIQ</h1>
             <p>Create a new password for your account.</p>
-            <a className="backToHome" href="/">← Back to ApplyIQ</a>
+            <Link className="backToHome" href="/">← Back to ApplyIQ</Link>
 
             <div className="field">
               <label>New Password</label>
@@ -1101,7 +1102,7 @@ ${role}
           <div className="loginCard">
             <h1>ApplyIQ</h1>
             <p>AI-powered job application workspace</p>
-            <a className="backToHome" href="/">← Back to ApplyIQ</a>
+            <Link className="backToHome" href="/">← Back to ApplyIQ</Link>
 
             <div className="field">
               <label>Email</label>
