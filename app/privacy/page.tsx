@@ -15,7 +15,7 @@ export default function PrivacyPage() {
         <Link href="/" className="legal-back">← Back to InduVanta</Link>
         <div className="marketing-eyebrow">YOUR INFORMATION</div>
         <h1>Privacy notice</h1>
-        <p className="legal-updated">Last updated: 18 November 2026</p>
+        <p className="legal-updated">Last updated: 19 November 2026</p>
         <p>InduVanta helps you prepare job applications. This notice explains, in plain language, what information the current application handles and which services process it. It describes the app as it is currently built; it is not a promise about features that may be added later.</p>
 
         <h2>1. Information you provide</h2>
