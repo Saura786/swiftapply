@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 export default function PrivacyPage() {
   return (
     <main className="legal-page">
-      <header className="legal-nav"><div className="legal-nav-inner"><Link href="/" className="legal-brand"><span className="marketing-logo">I</span> Indu<span>Vanta</span></Link><Link href="/workspace" className="legal-nav-link">Open workspace →</Link></div></header>
+      <header className="legal-nav"><div className="legal-nav-inner"><Link href="/" className="legal-brand"><span className="marketing-logo">I</span><span>Indu<span>Vanta</span></span></Link><Link href="/workspace" className="legal-nav-link">Open workspace →</Link></div></header>
       <article className="legal-content">
         <Link href="/" className="legal-back">← Back to InduVanta</Link>
         <div className="marketing-eyebrow">YOUR INFORMATION</div>
