@@ -19,7 +19,7 @@ export default function PrivacyPage() {
         <p>InduVanta helps you prepare job applications. This notice explains, in plain language, what information the current application handles and which services process it. It describes the app as it is currently built; it is not a promise about features that may be added later.</p>
 
         <h2>1. Information you provide</h2>
-        <p>When you create an account, ApplyIQ processes your email address and authentication information through Supabase. When you use the workspace, you may enter resume text, job descriptions, company and role details, application statuses, notes, and AI-generated drafts.</p>
+        <p>When you create an account, InduVanta processes your email address and authentication information through Supabase. When you use the workspace, you may enter resume text, job descriptions, company and role details, application statuses, notes, and AI-generated drafts.</p>
 
         <h2>2. Where workspace drafts are stored</h2>
         <p>The current app saves resume text, job descriptions, generated drafts and application-tracker entries in your browser&apos;s local storage, under a key associated with your signed-in Supabase user ID. These workspace drafts are not currently synchronised between devices. Anyone with access to your unlocked browser profile may be able to access local browser data, so use a private device and sign out when appropriate.</p>
@@ -36,7 +36,7 @@ export default function PrivacyPage() {
           <li><a href="https://www.anthropic.com/legal/privacy" target="_blank" rel="noreferrer">Anthropic</a> — AI processing when you request a generation.</li>
           <li><a href="https://vercel.com/legal/privacy-policy" target="_blank" rel="noreferrer">Vercel</a> — website hosting and server execution.</li>
         </ul>
-        <p>These providers process information under their own terms and privacy notices. ApplyIQ does not control their independent systems or retention practices.</p>
+        <p>These providers process information under their own terms and privacy notices. InduVanta does not control their independent systems or retention practices.</p>
 
         <h2>5. Your choices</h2>
         <p>You can avoid using AI features, choose what content to submit, edit generated drafts before using them, and remove local workspace drafts by clearing the site&apos;s browser storage. Clearing browser storage also removes the locally saved workspace and may sign you out. Logging out alone does not delete locally saved drafts. Account authentication and quota records are held by Supabase; this version of the site does not yet provide a self-service account-deletion control.</p>
