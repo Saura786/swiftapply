@@ -40,7 +40,7 @@ export default function Home() {
             <div className="marketing-points"><span>✓ Five AI generations each day</span><span>✓ Private account workspace</span><span>✓ No card required to sign up</span></div>
           </div>
 
-          <div className="marketing-visual" aria-label="Illustration of the ApplyIQ resume workspace">
+          <div className="marketing-visual" aria-label="Illustration of the InduVanta resume workspace">
             <div className="marketing-float marketing-float-top">✦ Role-aware suggestions</div>
             <div className="marketing-product-window">
               <div className="marketing-window-bar"><div className="marketing-window-brand"><span className="marketing-mini-logo">I</span> InduVanta</div><div className="marketing-window-controls"><i/><i/><i/></div></div>
