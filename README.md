@@ -1,6 +1,6 @@
-# ApplyIQ
+# InduVanta
 
-ApplyIQ is a Next.js application for resume tailoring, ATS analysis, cover letters, interview preparation, and job application tracking.
+InduVanta is a Next.js application for resume tailoring, ATS analysis, cover letters, interview preparation, and job application tracking.
 
 ## Requirements
 
