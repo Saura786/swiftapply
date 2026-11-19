@@ -14,7 +14,7 @@ const steps = [
 ];
 
 function Brand() {
-  return <Link href="/" className="marketing-brand" aria-label="ApplyIQ home"><span className="marketing-logo">A</span><span>Apply<span>IQ</span></span></Link>;
+  return <Link href="/" className="marketing-brand" aria-label="InduVanta home"><span className="marketing-logo">I</span><span>Indu<span>Vanta</span></span></Link>;
 }
 function Arrow() { return <span aria-hidden="true">↗</span>; }
 
@@ -35,7 +35,7 @@ export default function Home() {
           <div className="marketing-hero-copy">
             <div className="marketing-eyebrow"><i /> YOUR JOB SEARCH, MORE FOCUSED</div>
             <h1>Make every application <em>count.</em></h1>
-            <p className="marketing-lede">Bring your resume and the role you want. ApplyIQ helps you tailor your CV, prepare your documents and stay organised from first draft to follow-up.</p>
+            <p className="marketing-lede">Bring your resume and the role you want. InduVanta helps you tailor your CV, prepare your documents and stay organised from first draft to follow-up.</p>
             <div className="marketing-hero-actions"><Link href="/workspace?mode=signup" className="marketing-button">Create your account <Arrow /></Link><Link href="/workspace" className="marketing-text-link">I already have an account →</Link></div>
             <div className="marketing-points"><span>✓ Five AI generations each day</span><span>✓ Private account workspace</span><span>✓ No card required to sign up</span></div>
           </div>
@@ -43,7 +43,7 @@ export default function Home() {
           <div className="marketing-visual" aria-label="Illustration of the ApplyIQ resume workspace">
             <div className="marketing-float marketing-float-top">✦ Role-aware suggestions</div>
             <div className="marketing-product-window">
-              <div className="marketing-window-bar"><div className="marketing-window-brand"><span className="marketing-mini-logo">A</span> ApplyIQ</div><div className="marketing-window-controls"><i/><i/><i/></div></div>
+              <div className="marketing-window-bar"><div className="marketing-window-brand"><span className="marketing-mini-logo">I</span> InduVanta</div><div className="marketing-window-controls"><i/><i/><i/></div></div>
               <div className="marketing-window-body">
                 <aside className="marketing-mock-sidebar"><span className="marketing-avatar">JD</span><i className="selected"/><i/><i/><b/><i/><i/></aside>
                 <div className="marketing-mock-main">
@@ -83,11 +83,11 @@ export default function Home() {
 
       <section className="marketing-free"><div className="marketing-container"><div className="marketing-free-card"><div><div className="marketing-eyebrow">START WITHOUT THE PRESSURE</div><h2>A better place to begin.<br/><em>With clear limits.</em></h2><p>Create an account without adding a payment card. AI features are limited to five generations per user each UTC day and depend on the service’s available AI credits.</p><Link href="/workspace?mode=signup" className="marketing-button marketing-button-light">Create your account <Arrow/></Link><small>AI generations have a daily usage allowance. You stay in control of what you edit and download.</small></div><div className="marketing-free-art"><div className="marketing-paper"><small>YOUR NEXT CHAPTER</small><b>A clearer story.<br/><em>A stronger application.</em></b><i/><i/><i/><footer>✦ Built around the role you want</footer></div><div className="marketing-limit"><b>5</b><span>daily AI<br/>generations</span></div></div></div></div></section>
 
-      <section className="marketing-section marketing-faq" id="faq"><div className="marketing-container marketing-faq-grid"><div><div className="marketing-eyebrow">GOOD TO KNOW</div><h2>A few things<br/>before you begin.</h2><p>A straightforward workspace, with you in control of your applications and documents.</p></div><div className="marketing-faq-list"><details open><summary>Do I need a credit card to sign up?</summary><p>No. You can create an account without adding a payment card. AI use is limited to five generations per user each UTC day and depends on the service’s available AI credits.</p></details><details><summary>Can I edit what the AI creates?</summary><p>Yes. Treat the output as a draft. Review, change and approve your resume and cover letter before using them.</p></details><details><summary>What files can I upload?</summary><p>ApplyIQ supports DOCX, TXT and text-based PDF resumes. PDF uploads are limited to 5MB.</p></details><details><summary>Does an ATS score guarantee an interview?</summary><p>No. ATS insights are guidance to help you review your application. Employers use different systems and hiring criteria, and no score can guarantee an outcome.</p></details></div></div></section>
+      <section className="marketing-section marketing-faq" id="faq"><div className="marketing-container marketing-faq-grid"><div><div className="marketing-eyebrow">GOOD TO KNOW</div><h2>A few things<br/>before you begin.</h2><p>A straightforward workspace, with you in control of your applications and documents.</p></div><div className="marketing-faq-list"><details open><summary>Do I need a credit card to sign up?</summary><p>No. You can create an account without adding a payment card. AI use is limited to five generations per user each UTC day and depends on the service’s available AI credits.</p></details><details><summary>Can I edit what the AI creates?</summary><p>Yes. Treat the output as a draft. Review, change and approve your resume and cover letter before using them.</p></details><details><summary>What files can I upload?</summary><p>InduVanta supports DOCX, TXT and text-based PDF resumes. PDF uploads are limited to 5MB.</p></details><details><summary>Does an ATS score guarantee an interview?</summary><p>No. ATS insights are guidance to help you review your application. Employers use different systems and hiring criteria, and no score can guarantee an outcome.</p></details></div></div></section>
 
       <section className="marketing-final"><div className="marketing-container"><div className="marketing-eyebrow">YOUR NEXT STEP STARTS HERE</div><h2>Give your next application<br/>a little more intention.</h2><p>Bring your experience. Bring the role. We’ll help you organise the rest.</p><div><Link href="/workspace?mode=signup" className="marketing-button">Create your account <Arrow/></Link><Link href="/workspace">Already have an account? Log in</Link></div></div></section>
 
-      <footer className="marketing-footer"><div className="marketing-container"><Brand/><p>Make every application count.</p><div><a href="#features">Features</a><a href="#faq">FAQ</a><Link href="/privacy">Privacy</Link><Link href="/workspace">Log in</Link></div><small>© {new Date().getFullYear()} ApplyIQ. AI suggestions are drafts; always review your application before sending.</small></div></footer>
+      <footer className="marketing-footer"><div className="marketing-container"><Brand/><p>Make every application count.</p><div><a href="#features">Features</a><a href="#faq">FAQ</a><Link href="/privacy">Privacy</Link><Link href="/workspace">Log in</Link></div><small>© {new Date().getFullYear()} InduVanta. AI suggestions are drafts; always review your application before sending.</small></div></footer>
     </main>
   );
 }
