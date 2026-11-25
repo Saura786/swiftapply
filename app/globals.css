@@ -249,7 +249,8 @@ html { scroll-behavior: smooth; }
 .legal-nav { border-bottom: 1px solid #ecebf4; background: #fff; }
 .legal-nav-inner { width: min(100% - 48px, 1160px); min-height: 72px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; }
 .legal-brand { display: inline-flex; align-items: center; gap: 10px; color: #202039; font-size: 20px; font-weight: 850; text-decoration: none; }
-.legal-brand > span:last-child { color: #5a4ee6; }
+.legal-brand > span:last-child { color: #202039; }
+.legal-brand > span:last-child > span { color: #5a4ee6; }
 .legal-nav-link,.legal-back { color: #5c51d4; text-decoration: none; font-size: 12px; font-weight: 800; }
 .legal-content { width: min(100% - 48px, 780px); margin: 0 auto; padding: 58px 0 90px; }
 .legal-back { display: inline-block; margin-bottom: 38px; }

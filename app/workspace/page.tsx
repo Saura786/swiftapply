@@ -6,7 +6,7 @@ import mammoth from "mammoth";
 import { supabase } from "../../lib/supabase";
 import type { User } from "@supabase/supabase-js";
 
-const APP_NAME = "ApplyIQ";
+const APP_NAME = "InduVanta";
 const DAILY_LIMIT = 5;
 const MAX_INPUT = 50000;
 
@@ -299,7 +299,7 @@ function exportTrackerCSV(jobs: JobEntry[]) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "applyiq-application-tracker.csv";
+  a.download = "induvanta-application-tracker.csv";
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -1048,9 +1048,9 @@ ${role}
 
         <main className="loginPage">
           <div className="loginCard">
-            <h1>ApplyIQ</h1>
+            <h1>InduVanta</h1>
             <p>Create a new password for your account.</p>
-            <Link className="backToHome" href="/">← Back to ApplyIQ</Link>
+            <Link className="backToHome" href="/">← Back to InduVanta</Link>
 
             <div className="field">
               <label>New Password</label>
@@ -1102,9 +1102,9 @@ ${role}
 
         <main className="loginPage">
           <div className="loginCard">
-            <h1>ApplyIQ</h1>
+            <h1>InduVanta</h1>
             <p>AI-powered job application workspace</p>
-            <Link className="backToHome" href="/">← Back to ApplyIQ</Link>
+            <Link className="backToHome" href="/">← Back to InduVanta</Link>
 
             <div className="field">
               <label>Email</label>

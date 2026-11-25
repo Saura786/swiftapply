@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL("https://applyiq.dev"),
   title: {
-    default: "ApplyIQ – Make Every Job Application Count",
-    template: "%s | ApplyIQ",
+    default: "InduVanta – Make Every Job Application Count",
+    template: "%s | InduVanta",
   },
   description:
     "Tailor your resume to job descriptions, review ATS fit, prepare cover letters and interviews, and organise your job search in one private workspace.",
@@ -36,17 +36,18 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     url: "https://applyiq.dev/",
-    siteName: "ApplyIQ",
-    title: "ApplyIQ – Make Every Job Application Count",
+    siteName: "InduVanta",
+    title: "InduVanta – Make Every Job Application Count",
     description:
       "A focused workspace to tailor your resume, prepare application documents and organise your job search.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "ApplyIQ – Make Every Job Application Count",
+    title: "InduVanta – Make Every Job Application Count",
     description:
-      "Tailor your resume, prepare application documents and keep your job search organised with ApplyIQ.",
+      "Tailor your resume, prepare application documents and keep your job search organised with InduVanta.",
   },
+  icons: { icon: "/icon.svg" },
   robots: {
     index: true,
     follow: true,
